@@ -2,19 +2,28 @@
 - - -
 ## 1Y3T Team Project
 ### Contributors
-> + jcy9503(Lucas Jeong)
+> + [Lucas Jeong](github.com/jcy9503)
 > > Project Manager  
 > > Class / Rule Manager
+> + [Kimble](github.com/kimble930922)
+> > UI Manager  
+> > Feature Implementation
+> + [Keamtion](github.com/keamtion)
+> > Item Manager
+> + [Eple0731](github.com/Eple0731)
+> > Menu / Option Manager  
+> > Singleton Object Implementation
 ### Project Description
 This game is 3D-based tetris which can be run in mobile and PC.  
 Base Unity version: 2021.3.25f1
 ### Project Synchronization Procedure
-> 1. Make 3D Core Project in your local directory. Make sure you match with base Unity version.
-> 2. Initialize Git in the root directory(where solution file .sln exists) of the project.
-> 3. Pull master branch from repository.
-> 4. Make your own branch and do programming.
-> 5. Commit & Push when tasks are done.
-> 6. Project manager(jcy9503) will review the changes and merge into master branch.
+> 1. Clone Git in the local directory.
+> 2. Make 3D Core Project in your temporary local directory. Make sure to make with base Unity version.
+> 3. Copy solution file(.sln) and Unity library folder(Library) to your cloned Git directory root folder.
+> 4. Make your own branch.
+> 5. Do your tasks.
+> 6. Commit & Push to your branch when tasks are done.
+> 7. Project manager(jcy9503) will review the changes and merge into master branch.
 ### Warning
 + Do not share codes with others.
 + Do not edit any config files(.ignore etc.) without permission.
