@@ -18,7 +18,7 @@ This game is 3D-based tetris which can be run in mobile and PC.
 ### Project Synchronization Procedure
 
 > 1. Clone Git in the local directory.
-> 2. Make 3D Core Project in your temporary local directory. Make sure to make with base Unity version.
+> 2. Make 3D Core Project in your temporary local directory. **Make sure to create with base Unity version.**
 > 3. Copy solution file(.sln) and Unity library folder(Library) to your cloned Git directory root folder.
 > 4. Make your own branch.
 > 5. Do your tasks.
