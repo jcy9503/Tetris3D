@@ -6,71 +6,71 @@
     private int SizeY { get; }
     private int SizeZ { get; }
 
-    public int this[int X, int Y, int Z]
+    public int this[int x, int y, int z]
     {
-        get => grid[X, Y, Z];
-        set => grid[X, Y, Z] = value;
+        get => grid[x, y, z];
+        set => grid[x, y, z] = value;
     }
 
-    public GameGrid(int X, int Y, int Z)
+    public GameGrid(int x, int y, int z)
     {
-        SizeX = X;
-        SizeY = Y;
-        SizeZ = Z;
-        grid = new int[X, Y, Z];
+        SizeX = x;
+        SizeY = y;
+        SizeZ = z;
+        grid = new int[x, y, z];
     }
 
-    public bool IsInside(int X, int Y, int Z)
+    public bool IsInside(int x, int y, int z)
     {
-        return X >= 0 && X < SizeX && Y >= 0 && Y < SizeY && Z >= 0 && Z < SizeZ;
+        return x >= 0 && x < SizeX && y >= 0 && y < SizeY && z >= 0 && z < SizeZ;
     }
 
-    public bool IsEmpty(int X, int Y, int Z)
+    public bool IsEmpty(int x, int y, int z)
     {
-        return IsInside(X, Y, Z) && grid[X, Y, Z] == 0;
+        return IsInside(x, y, z) && grid[x, y, z] == 0;
     }
 
-    public bool IsPlaneFull(int Y)
+    public bool IsPlaneFull(int y)
     {
         for (int x = 0; x < SizeX; ++x)
         {
             for (int z = 0; z < SizeZ; ++z)
-                if (grid[x, Y, z] == 0)
+                if (grid[x, y, z] == 0)
                     return false;
         }
 
         return true;
     }
 
-    public bool IsPlaneEmpty(int Y)
+    public bool IsPlaneEmpty(int y)
     {
         for (int x = 0; x < SizeX; ++x)
         {
             for (int z = 0; z < SizeZ; ++z)
-                if (grid[x, Y, z] != 0)
+                if (grid[x, y, z] != 0)
                     return false;
         }
 
         return true;
     }
 
-    private void ClearPlane(int Y)
+    private void ClearPlane(int y)
     {
         for (int x = 0; x < SizeX; ++x)
         {
             for (int z = 0; z < SizeZ; ++z)
-                grid[x, Y, z] = 0;
+                grid[x, y, z] = 0;
         }
     }
 
-    private void MovePlaneDown(int Y, int NumPlanes)
+    private void MovePlaneDown(int y, int numPlanes)
     {
         for (int x = 0; x < SizeX; ++x)
         {
             for (int z = 0; z < SizeZ; ++z)
             {
-                grid[x, Y + NumPlanes, z] = grid[x, Y, z];
-                grid[x, Y, z] = 0;
+                grid[x, y + numPlanes, z] = grid[x, y, z];
+                grid[x, y, z] = 0;
             }
         }
     }
