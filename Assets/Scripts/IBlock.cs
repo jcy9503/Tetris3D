@@ -4,7 +4,7 @@ public interface IBlock
 {
     uint GetId();
     void Reset();
-    void Move(int x, int y, int z);
+    void Move(Vector3 move);
     void RotateXClockWise();
     void RotateXCounterClockWise();
     void RotateYClockWise();

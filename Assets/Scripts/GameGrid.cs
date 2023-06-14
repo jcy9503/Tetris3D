@@ -2,9 +2,9 @@
 {
     private readonly int[,,] grid;
 
-    private int SizeX { get; }
-    private int SizeY { get; }
-    private int SizeZ { get; }
+    public int SizeX { get; private set; }
+    public int SizeY { get; private set; }
+    public int SizeZ { get; private set; }
 
     public int this[int x, int y, int z]
     {
@@ -14,10 +14,15 @@
 
     public GameGrid(int x, int y, int z)
     {
+        SetGrid(x, y, z);
+        grid = new int[x, y, z];
+    }
+
+    public void SetGrid(int x, int y, int z)
+    {
         SizeX = x;
         SizeY = y;
         SizeZ = z;
-        grid = new int[x, y, z];
     }
 
     public bool IsInside(int x, int y, int z)
