@@ -7,7 +7,7 @@ public class CBlock : IBlock
     private Vector3 curPos;
     private bool[][][] tile;
 
-    public CBlock(uint id, uint size, bool[][][] tile)
+    protected CBlock(uint id, uint size, bool[][][] tile)
     {
         this.id = id;
         this.size = size;
