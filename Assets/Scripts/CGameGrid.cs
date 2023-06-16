@@ -1,4 +1,4 @@
-﻿public class GameGrid
+﻿public class CGameGrid
 {
     private readonly int[,,] grid;
 
@@ -12,7 +12,7 @@
         set => grid[x, y, z] = value;
     }
 
-    public GameGrid(int x, int y, int z)
+    public CGameGrid(int x, int y, int z)
     {
         SetGrid(x, y, z);
         grid = new int[x, y, z];

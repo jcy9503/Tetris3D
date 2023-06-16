@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -45,6 +43,13 @@ public class GameManager : MonoBehaviour
     {
         shuttingDown = true;
     }
-    
-    public static GameGrid Grid;
+
+    public static CGameGrid Grid = new(10, 22, 10);
+    public static CBlockQueue BlockQueue = new();
+    public static bool GameOver { get; private set; }
+
+    private void Awake()
+    {
+        GameOver = false;
+    }
 }
