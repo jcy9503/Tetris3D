@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    private static object locker = new();
+    private static readonly object locker = new();
     
     private static bool shuttingDown = false;
     
@@ -44,12 +44,35 @@ public class GameManager : MonoBehaviour
         shuttingDown = true;
     }
 
-    public static CGameGrid Grid = new(10, 22, 10);
-    public static CBlockQueue BlockQueue = new();
+    public static GameGrid Grid = new(10, 22, 10);
+    public static BlockQueue BlockQueue = new();
+    private GameObject[] Blocks;
+    [SerializeField] private const float blockSize = 1.0f;
     public static bool GameOver { get; private set; }
 
     private void Awake()
     {
         GameOver = false;
+    }
+
+    private void GridRender()
+    {
+        int sizeX = Grid.SizeX;
+        int sizeY = Grid.SizeY;
+        int sizeZ = Grid.SizeZ;
+        
+        
+
+        for (int i = 0; i < sizeY; ++i)
+        {
+            Vector3 curPosition = new(-blockSize * sizeX / 2, blockSize * (sizeY / 2f - i), -blockSize * sizeZ / 2);
+            for (int j = 0; j < sizeX; ++j)
+            {
+                for (int k = 0; k < sizeZ; ++k)
+                {
+                    
+                }
+            }
+        }
     }
 }

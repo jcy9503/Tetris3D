@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public class BlockFactory
 {
-    private delegate CBlock CreateBlocks();
+    private delegate Block CreateBlocks();
 
     private readonly List<CreateBlocks> createFactory;
 
@@ -20,52 +20,52 @@ public class BlockFactory
         };
     }
 
-    public CBlock BlockSpawn(int id)
+    public Block BlockSpawn(int id)
     {
         CreateBlocks func = createFactory[id - 1];
         
         return func();
     }
 
-    private static CBlock CreateBlockI()
+    private static Block CreateBlockI()
     {
-        CBlock block = new CBlockI();
+        Block block = new BlockI();
         return block;
     }
 
-    private static CBlock CreateBlockL()
+    private static Block CreateBlockL()
     {
-        CBlock block = new CBlockL();
+        Block block = new BlockL();
         return block;
     }
 
-    private static CBlock CreateBlockT()
+    private static Block CreateBlockT()
     {
-        CBlock block = new CBlockT();
+        Block block = new BlockT();
         return block;
     }
 
-    private static CBlock CreateBlockO()
+    private static Block CreateBlockO()
     {
-        CBlock block = new CBlockO();
+        Block block = new BlockO();
         return block;
     }
 
-    private static CBlock CreateBlockJ()
+    private static Block CreateBlockJ()
     {
-        CBlock block = new CBlockJ();
+        Block block = new BlockJ();
         return block;
     }
 
-    private static CBlock CreateBlockZ()
+    private static Block CreateBlockZ()
     {
-        CBlock block = new CBlockZ();
+        Block block = new BlockZ();
         return block;
     }
 
-    private static CBlock CreateBlockS()
+    private static Block CreateBlockS()
     {
-        CBlock block = new CBlockS();
+        Block block = new BlockS();
         return block;
     }
 }

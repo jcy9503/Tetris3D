@@ -1,6 +1,6 @@
-public class CBlockI : CBlock
+public class BlockI : Block
 {
-    public CBlockI() : base(1, 4, new[]
+    public BlockI() : base(1, 4, new[]
     {
         new[]
         {
@@ -35,9 +35,9 @@ public class CBlockI : CBlock
     }
 }
 
-public class CBlockL : CBlock
+public class BlockL : Block
 {
-    public CBlockL() : base(2, 3, new[]
+    public BlockL() : base(2, 3, new[]
     {
         new[]
         {
@@ -62,9 +62,9 @@ public class CBlockL : CBlock
     }
 }
 
-public class CBlockT : CBlock
+public class BlockT : Block
 {
-    public CBlockT() : base(3, 3, new[]
+    public BlockT() : base(3, 3, new[]
     {
         new[]
         {
@@ -89,9 +89,9 @@ public class CBlockT : CBlock
     }
 }
 
-public class CBlockO : CBlock
+public class BlockO : Block
 {
-    public CBlockO() : base(4, 2, new[]
+    public BlockO() : base(4, 2, new[]
     {
         new[]
         {
@@ -108,9 +108,9 @@ public class CBlockO : CBlock
     }
 }
 
-public class CBlockJ : CBlock
+public class BlockJ : Block
 {
-    public CBlockJ() : base(5, 3, new[]
+    public BlockJ() : base(5, 3, new[]
     {
         new[]
         {
@@ -135,9 +135,9 @@ public class CBlockJ : CBlock
     }
 }
 
-public class CBlockZ : CBlock
+public class BlockZ : Block
 {
-    public CBlockZ() : base(6, 3, new[]
+    public BlockZ() : base(6, 3, new[]
     {
         new[]
         {
@@ -162,9 +162,9 @@ public class CBlockZ : CBlock
     }
 }
 
-public class CBlockS : CBlock
+public class BlockS : Block
 {
-    public CBlockS() : base(7, 3, new[]
+    public BlockS() : base(7, 3, new[]
     {
         new[]
         {

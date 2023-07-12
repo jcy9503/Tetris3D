@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public class CBlock : IBlock
+public class Block : IBlock
 {
     private readonly uint id;
     private readonly uint size;
     private Vector3 curPos;
     private bool[][][] tile;
 
-    protected CBlock(uint id, uint size, bool[][][] tile)
+    protected Block(uint id, uint size, bool[][][] tile)
     {
         this.id = id;
         this.size = size;

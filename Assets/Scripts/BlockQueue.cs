@@ -1,20 +1,20 @@
 using UnityEngine;
 
-public class CBlockQueue
+public class BlockQueue
 {
-    public CBlockQueue()
+    public BlockQueue()
     {
         NextBlock = RandomBlock();
     }
     
-    private static readonly BlockFactory BlockCreate = new();
+    private static readonly BlockFactory blockCreate = new();
 
     private const int maxId = 7;
 
-    public CBlock NextBlock { get; private set; }
+    public Block NextBlock { get; private set; }
 
-    private CBlock curBlock;
-    public CBlock Cur
+    private Block curBlock;
+    public Block Cur
     {
         get => curBlock;
         private set
@@ -24,14 +24,14 @@ public class CBlockQueue
         }
     }
 
-    private CBlock RandomBlock()
+    private static Block RandomBlock()
     {
-        return BlockCreate.BlockSpawn(Random.Range(1, maxId + 1));
+        return blockCreate.BlockSpawn(Random.Range(0, maxId));
     }
 
-    public CBlock GetAndUpdateBlock()
+    public Block GetAndUpdateBlock()
     {
-        CBlock block = NextBlock;
+        Block block = NextBlock;
 
         do
         {
