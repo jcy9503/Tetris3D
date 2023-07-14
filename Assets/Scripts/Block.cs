@@ -2,16 +2,18 @@ using UnityEngine;
 
 public class Block : IBlock
 {
-    private readonly uint id;
-    private readonly uint size;
-    private Vector3 curPos;
-    private bool[][][] tile;
+    private readonly uint       id;
+    private readonly uint       size;
+    private          Vector3    curPos;
+    private          bool[][][] tile;
+    private          string     matPath;
 
-    protected Block(uint id, uint size, bool[][][] tile)
+    protected Block(uint id, uint size, bool[][][] tile, string matPath)
     {
-        this.id = id;
-        this.size = size;
-        this.tile = tile;
+        this.id      = id;
+        this.size    = size;
+        this.tile    = tile;
+        this.matPath = matPath;
     }
 
     public uint GetId() => id;

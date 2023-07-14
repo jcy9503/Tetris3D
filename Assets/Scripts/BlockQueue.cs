@@ -1,4 +1,4 @@
-using UnityEngine;
+using Random = System.Random;
 
 public class BlockQueue
 {
@@ -6,27 +6,29 @@ public class BlockQueue
     {
         NextBlock = RandomBlock();
     }
-    
+
     private static readonly BlockFactory blockCreate = new();
 
     private const int maxId = 7;
 
     public Block NextBlock { get; private set; }
 
-    private Block curBlock;
-    public Block Cur
+    private Block currentBlock;
+
+    public Block Current
     {
-        get => curBlock;
+        get => currentBlock;
         private set
         {
-            curBlock = value;
-            curBlock.Reset();
+            currentBlock = value;
+            currentBlock.Reset();
         }
     }
 
     private static Block RandomBlock()
     {
-        return blockCreate.BlockSpawn(Random.Range(0, maxId));
+        Random randValue = new();
+        return blockCreate.BlockSpawn(randValue.Next(0, maxId));
     }
 
     public Block GetAndUpdateBlock()

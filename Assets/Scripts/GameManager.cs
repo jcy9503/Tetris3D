@@ -1,12 +1,13 @@
+using System.Collections;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     private static readonly object locker = new();
-    
-    private static bool shuttingDown = false;
-    
-    private static GameManager _instance;
+
+    private static bool shuttingDown;
+
+    private static GameManager instance;
 
     public static GameManager Instance
     {
@@ -20,17 +21,17 @@ public class GameManager : MonoBehaviour
 
             lock (locker)
             {
-                if (_instance != null) return _instance;
-                _instance = FindObjectOfType<GameManager>();
-                if (_instance == null)
+                if (instance != null) return instance;
+                instance = FindObjectOfType<GameManager>();
+                if (instance == null)
                 {
-                    _instance = new GameObject("GameManager").AddComponent<GameManager>();
+                    instance = new GameObject("GameManager").AddComponent<GameManager>();
                 }
-                
-                DontDestroyOnLoad(_instance);
+
+                DontDestroyOnLoad(instance);
             }
 
-            return _instance;
+            return instance;
         }
     }
 
@@ -44,35 +45,44 @@ public class GameManager : MonoBehaviour
         shuttingDown = true;
     }
 
-    public static GameGrid Grid = new(10, 22, 10);
-    public static BlockQueue BlockQueue = new();
-    private GameObject[] Blocks;
-    [SerializeField] private const float blockSize = 1.0f;
-    public static bool GameOver { get; private set; }
+    [SerializeField] private int gridSizeX = 10;
+    [SerializeField] private int gridSizeY = 22;
+    [SerializeField] private int gridSizeZ = 10;
+
+    public static  GameGrid   Grid;
+    private static BlockQueue blockQueue;
+
+    [SerializeField] private float blockSize = 1.0f;
+    [SerializeField] private float interval  = 1.0f;
+
+    private Coroutine func;
 
     private void Awake()
     {
-        GameOver = false;
+        Grid       = new GameGrid(gridSizeX, gridSizeY, gridSizeZ, blockSize);
+        blockQueue = new BlockQueue();
+
+        func = StartCoroutine(BlockDown());
     }
 
-    private void GridRender()
+    private IEnumerator BlockDown()
     {
-        int sizeX = Grid.SizeX;
-        int sizeY = Grid.SizeY;
-        int sizeZ = Grid.SizeZ;
-        
-        
-
-        for (int i = 0; i < sizeY; ++i)
+        while (true)
         {
-            Vector3 curPosition = new(-blockSize * sizeX / 2, blockSize * (sizeY / 2f - i), -blockSize * sizeZ / 2);
-            for (int j = 0; j < sizeX; ++j)
+            if (!Grid.IsPlaneEmpty(0))
             {
-                for (int k = 0; k < sizeZ; ++k)
-                {
-                    
-                }
+                GameOver();
+                yield break;
             }
+
+            blockQueue.Current.Move(-Vector3.down);
+
+            yield return new WaitForSeconds(interval);
         }
+    }
+
+    private void GameOver()
+    {
+        StopCoroutine(func);
     }
 }

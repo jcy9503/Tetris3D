@@ -22,8 +22,8 @@ public class BlockFactory
 
     public Block BlockSpawn(int id)
     {
-        CreateBlocks func = createFactory[id - 1];
-        
+        CreateBlocks func = createFactory[id];
+
         return func();
     }
 

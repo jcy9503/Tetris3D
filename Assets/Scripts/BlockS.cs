@@ -30,7 +30,7 @@ public class BlockI : Block
             new[] { false, false, false, false },
             new[] { false, false, false, false }
         }
-    })
+    }, "Materials/BlockI")
     {
     }
 }
@@ -57,7 +57,7 @@ public class BlockL : Block
             new[] { false, false, false },
             new[] { false, false, false }
         }
-    })
+    }, "Materials/BlockL")
     {
     }
 }
@@ -84,7 +84,7 @@ public class BlockT : Block
             new[] { false, false, false },
             new[] { false, false, false }
         }
-    })
+    }, "Materials/BlockT")
     {
     }
 }
@@ -103,7 +103,7 @@ public class BlockO : Block
             new[] { true, true },
             new[] { true, true }
         }
-    })
+    }, "Materials/BlockO")
     {
     }
 }
@@ -130,7 +130,7 @@ public class BlockJ : Block
             new[] { false, false, false },
             new[] { false, false, false }
         }
-    })
+    }, "Materials/BlockJ")
     {
     }
 }
@@ -157,7 +157,7 @@ public class BlockZ : Block
             new[] { false, false, false },
             new[] { false, false, false }
         }
-    })
+    }, "Materials/BlockZ")
     {
     }
 }
@@ -184,7 +184,7 @@ public class BlockS : Block
             new[] { false, false, false },
             new[] { false, false, false }
         }
-    })
+    }, "Materials/BlockS")
     {
     }
 }
