@@ -8,8 +8,8 @@
 public class GameGrid
 {
     private int[,,]  grid;
-    private CubeMesh gridMesh;
-    private float    gridUnit;
+    public  CubeMesh GridMesh { get; private set; }
+    public  float    GridUnit { get; private set; }
 
     public int SizeX { get; private set; }
     public int SizeY { get; private set; }
@@ -31,7 +31,7 @@ public class GameGrid
     {
         grid = new int[SizeX, SizeY, SizeZ];
 
-        gridMesh = new CubeMesh("Grid", SizeX, SizeY, SizeZ, gridUnit, true, "Materials/Grid", false, null);
+        GridMesh = new CubeMesh("Grid", SizeX, SizeY, SizeZ, GridUnit, true, "Materials/Grid", false, null);
     }
 
     private void SetGrid(int x, int y, int z, float unit)
@@ -39,7 +39,7 @@ public class GameGrid
         SizeX    = x;
         SizeY    = y;
         SizeZ    = z;
-        gridUnit = unit;
+        GridUnit = unit;
     }
 
     public bool IsInside(int x, int y, int z)

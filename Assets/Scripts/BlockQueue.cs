@@ -2,44 +2,43 @@ using Random = System.Random;
 
 public class BlockQueue
 {
-    public BlockQueue()
-    {
-        NextBlock = RandomBlock();
-    }
+	public BlockQueue()
+	{
+		currentBlock = RandomBlock();
+		nextBlock    = RandomBlock();
+	}
 
-    private static readonly BlockFactory blockCreate = new();
+	private static readonly BlockFactory blockCreateFunc = new();
 
-    private const int maxId = 7;
+	private const int   blockType = 7;
+	private       Block nextBlock;
+	private       Block currentBlock;
 
-    public Block NextBlock { get; private set; }
+	public Block Current
+	{
+		get => currentBlock;
+		private set
+		{
+			currentBlock = value;
+			currentBlock.Reset();
+		}
+	}
 
-    private Block currentBlock;
+	private static Block RandomBlock()
+	{
+		Random randValue = new();
+		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockType));
+	}
 
-    public Block Current
-    {
-        get => currentBlock;
-        private set
-        {
-            currentBlock = value;
-            currentBlock.Reset();
-        }
-    }
+	public Block GetAndUpdateBlock()
+	{
+		Block block = nextBlock;
 
-    private static Block RandomBlock()
-    {
-        Random randValue = new();
-        return blockCreate.BlockSpawn(randValue.Next(0, maxId));
-    }
+		do
+		{
+			nextBlock = RandomBlock();
+		} while (block.GetId() == nextBlock.GetId());
 
-    public Block GetAndUpdateBlock()
-    {
-        Block block = NextBlock;
-
-        do
-        {
-            NextBlock = RandomBlock();
-        } while (block.GetId() == NextBlock.GetId());
-
-        return block;
-    }
+		return block;
+	}
 }
