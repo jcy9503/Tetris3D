@@ -9,11 +9,9 @@ public class BlockQueue
 	}
 
 	private static readonly BlockFactory blockCreateFunc = new();
-
-	private const int   blockType = 7;
-	private       Block nextBlock;
-	private       Block currentBlock;
-
+	private const           int          blockType       = 7;
+	private                 Block        nextBlock;
+	private                 Block        currentBlock;
 	public Block Current
 	{
 		get => currentBlock;
@@ -27,6 +25,7 @@ public class BlockQueue
 	private static Block RandomBlock()
 	{
 		Random randValue = new();
+
 		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockType));
 	}
 

@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
 		Dir                            = false;
 		checkDir                       = false;
 
-		Grid       = new GameGrid(gridSizeX, gridSizeY, gridSizeZ, blockSize);
+		Grid       = new GameGrid(ref gridSize, blockSize);
 		blockQueue = new BlockQueue();
 
 		func = new List<Coroutine>
@@ -153,9 +153,7 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private float           initialCameraRotationX    = 15f;
 	[SerializeField] private float           cameraRotationConstraintX = 55f;
 	[SerializeField] private float           cameraSpeed               = 2000f;
-	[SerializeField] private int             gridSizeX                 = 10;
-	[SerializeField] private int             gridSizeY                 = 22;
-	[SerializeField] private int             gridSizeZ                 = 10;
+	[SerializeField] private int[]           gridSize                  = { 10, 22, 10 };
 	public static            GameGrid        Grid;
 	private static           BlockQueue      blockQueue;
 	[SerializeField] private float           blockSize = 1.0f;
