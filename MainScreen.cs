@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.SearchService;
@@ -8,6 +9,9 @@ using UnityEngine.UI;
 
 public class MainScreen : MonoBehaviour
 {
+    public Transform Block_Spin;
+    public float Spinning_Speed = 0.05f;
+    
     public Button GameStart;
     public Button Score;
     public Button Option;
@@ -20,6 +24,8 @@ public class MainScreen : MonoBehaviour
 
     public void Awake()
     {
+        Block_Spin = GameObject.Find("Block_Spin").GetComponent<Transform>();
+
         GameStart = GameObject.Find("GameStart").AddComponent<Button>();
         Score = GameObject.Find("LeaderBoard").AddComponent<Button>();
         Option = GameObject.Find("Option").AddComponent<Button>();
@@ -36,6 +42,12 @@ public class MainScreen : MonoBehaviour
         Quit.onClick.AddListener(ShowQuit);
 
 
+    }
+
+    public IEnumerator RotateBlock()
+    {
+        Block_Spin.Rotate(new Vector3( Spinning_Speed * Time.deltaTime, 0), Space.World);
+        yield return null;
     }
 
     public void StartGame()
@@ -60,6 +72,6 @@ public class MainScreen : MonoBehaviour
     }
     public void Update()
     {
-
+       StartCoroutine(RotateBlock()); //If Game Starts, off this
     }
 }
