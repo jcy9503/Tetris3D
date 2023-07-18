@@ -4,29 +4,18 @@ public class BlockQueue
 {
 	public BlockQueue()
 	{
-		currentBlock = RandomBlock();
-		nextBlock    = RandomBlock();
+		nextBlock = RandomBlock();
 	}
 
 	private static readonly BlockFactory blockCreateFunc = new();
-	private const           int          blockType       = 7;
+	private const           int          blockTypeNum    = 7;
 	private                 Block        nextBlock;
-	private                 Block        currentBlock;
-	public Block Current
-	{
-		get => currentBlock;
-		private set
-		{
-			currentBlock = value;
-			currentBlock.Reset();
-		}
-	}
 
 	private static Block RandomBlock()
 	{
 		Random randValue = new();
 
-		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockType));
+		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockTypeNum));
 	}
 
 	public Block GetAndUpdateBlock()

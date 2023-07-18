@@ -1,10 +1,8 @@
-using UnityEngine;
-
 public interface IBlock
 {
 	uint GetId();
 	void Reset();
-	void Move(Vector3 move);
+	void Move(Position move);
 	void RotateXClockWise();
 	void RotateXCounterClockWise();
 	void RotateYClockWise();

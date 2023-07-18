@@ -56,7 +56,7 @@ public class GameManager : MonoBehaviour
 
 	private void Awake()
 	{
-		gameOver = false;
+		GameOver = false;
 
 		mainCamera                     = Camera.main;
 		mainCamera!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
@@ -66,8 +66,9 @@ public class GameManager : MonoBehaviour
 		Dir                            = false;
 		checkDir                       = false;
 
-		Grid       = new GameGrid(ref gridSize, blockSize);
-		blockQueue = new BlockQueue();
+		Grid         = new GameGrid(ref gridSize, blockSize);
+		BlockQueue   = new BlockQueue();
+		CurrentBlock = BlockQueue.GetAndUpdateBlock();
 
 		func = new List<Coroutine>
 		{
@@ -77,9 +78,9 @@ public class GameManager : MonoBehaviour
 
 	private void Update()
 	{
-		if (gameOver)
+		if (GameOver)
 		{
-			GameOver();
+			Terminate();
 		}
 		else
 		{
@@ -132,13 +133,14 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-	private static bool       gameOver;
-	private        Camera     mainCamera;
-	private        Transform  rotatorTr;
-	private        Quaternion rotatorRt;
-	private        Quaternion mementoRotation;
-	private        bool       checkDir;
-	private        bool       _dir;
+	public static bool GameOver { get; private set; }
+
+	private Camera     mainCamera;
+	private Transform  rotatorTr;
+	private Quaternion rotatorRt;
+	private Quaternion mementoRotation;
+	private bool       checkDir;
+	private bool       _dir;
 	private bool Dir
 	{
 		get => _dir;
@@ -149,15 +151,27 @@ public class GameManager : MonoBehaviour
 			_dir = value;
 		}
 	}
-	private                  Vector2         clickPos;
-	[SerializeField] private float           initialCameraRotationX    = 15f;
-	[SerializeField] private float           cameraRotationConstraintX = 55f;
-	[SerializeField] private float           cameraSpeed               = 2000f;
-	[SerializeField] private int[]           gridSize                  = { 10, 22, 10 };
-	public static            GameGrid        Grid;
-	private static           BlockQueue      blockQueue;
-	[SerializeField] private float           blockSize = 1.0f;
-	[SerializeField] private float           interval  = 1.0f;
+	private                  Vector2  clickPos;
+	[SerializeField] private float    initialCameraRotationX    = 15f;
+	[SerializeField] private float    cameraRotationConstraintX = 55f;
+	[SerializeField] private float    cameraSpeed               = 2000f;
+	[SerializeField] private int[]    gridSize                  = { 10, 22, 10 };
+	public static            GameGrid Grid;
+
+	public static BlockQueue BlockQueue { get; private set; }
+	private       Block      currentBlock;
+	public Block CurrentBlock
+	{
+		get => currentBlock;
+		set
+		{
+			currentBlock = value;
+			currentBlock.Reset();
+		}
+	}
+	[SerializeField] private float blockSize = 1.0f;
+
+	[SerializeField] private float           interval = 1.0f;
 	private                  List<Coroutine> func;
 
 	private IEnumerator BlockDown()
@@ -166,22 +180,23 @@ public class GameManager : MonoBehaviour
 		{
 			if (!Grid.IsPlaneEmpty(0))
 			{
-				gameOver = true;
+				GameOver = true;
 
 				break;
 			}
 
-			blockQueue.Current.Move(-Vector3.down);
 
 			yield return new WaitForSeconds(interval);
 		}
 	}
 
-	private void GameOver()
+	private void Terminate()
 	{
 		foreach (Coroutine coroutine in func)
 		{
 			StopCoroutine(coroutine);
 		}
 	}
+
+	
 }

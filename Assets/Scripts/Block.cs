@@ -1,10 +1,11 @@
-using UnityEngine;
+using System;
+using System.Collections.Generic;
 
 public class Block : IBlock
 {
 	private readonly uint       id;
 	private readonly uint       size;
-	private          Vector3    curPos;
+	private          Position   curPos;
 	private          bool[][][] tile;
 	private          string     matPath;
 
@@ -20,12 +21,21 @@ public class Block : IBlock
 
 	public void Reset()
 	{
-		curPos = new Vector3(Random.Range(0, GameManager.Grid.SizeX), 0, GameManager.Grid.SizeZ);
+		Random randValue = new();
+		curPos = new Position(randValue.Next(0, GameManager.Grid.SizeX), 0, randValue.Next(0, GameManager.Grid.SizeZ));
 	}
 
-	public void Move(Vector3 move)
+	public void Move(Position move)
 	{
 		curPos += move;
+	}
+
+	public IEnumerable<bool> TilePositions()
+	{
+		foreach (bool[][] info in tile)
+		{
+			
+		}
 	}
 
 	public void RotateXClockWise()
