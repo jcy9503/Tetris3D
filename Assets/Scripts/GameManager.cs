@@ -324,6 +324,8 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private float      initialCameraRotationX    = 15f;
 	[SerializeField] private float      cameraRotationConstraintX = 55f;
 	[SerializeField] private float      cameraSpeed               = 2000f;
+	[SerializeField] private float      cameraShakeAmount         = 3f;
+	[SerializeField] private float      cameraShakeTime           = 1f;
 	private                  int        viewAngle;
 	[SerializeField] private int[]      gridSize = { 10, 22, 10 };
 	public static            GameGrid   Grid;
@@ -391,6 +393,22 @@ public class GameManager : MonoBehaviour
 			
 			yield return new WaitForSeconds(keyInterval);
 		}
+	}
+
+	private IEnumerator CameraShake()
+	{
+		float   timer = 0;
+		Vector3 pos   = mainCamera.transform.position;
+
+		while (timer <= cameraShakeTime)
+		{
+			mainCamera.transform.position =  (Vector3)Random.insideUnitCircle * cameraShakeAmount + pos;
+			timer                         += Time.deltaTime;
+
+			yield return null;
+		}
+
+		mainCamera.transform.position = pos;
 	}
 
 	private void Terminate()
@@ -560,11 +578,17 @@ public class GameManager : MonoBehaviour
 
 	private void MoveBlockDownWhole()
 	{
+		int num = 0;
+		
 		do
 		{
 			CurrentBlock.Move(Coord.Down);
+			++num;
 		} while (BlockFits(CurrentBlock));
 
+		if (num > 2)
+			StartCoroutine(CameraShake());
+		
 		CurrentBlock.Move(Coord.Up);
 		PlaceBlock();
 	}

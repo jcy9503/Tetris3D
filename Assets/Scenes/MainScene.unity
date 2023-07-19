@@ -350,6 +350,8 @@ MonoBehaviour:
   initialCameraRotationX: 15
   cameraRotationConstraintX: 55
   cameraSpeed: 2000
+  cameraShakeAmount: 0.5
+  cameraShakeTime: 0.3
   gridSize: 080000001600000008000000
   blockSize: 1
   downInterval: 1
