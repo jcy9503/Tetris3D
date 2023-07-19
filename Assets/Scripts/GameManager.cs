@@ -65,6 +65,7 @@ public class GameManager : MonoBehaviour
 		mementoRotation                = Quaternion.identity;
 		Dir                            = false;
 		checkDir                       = false;
+		viewAngle                      = 0;
 
 		Grid       = new GameGrid(ref gridSize, blockSize);
 		BlockQueue = new BlockQueue();
@@ -73,8 +74,11 @@ public class GameManager : MonoBehaviour
 		                          -Grid.SizeZ / 2f + blockSize / 2);
 		CurrentBlock = BlockQueue.GetAndUpdateBlock();
 
-		blockMeshList = new List<PrefabMesh>();
-		gridMeshList  = new List<PrefabMesh>();
+		blockMeshList  = new List<PrefabMesh>();
+		shadowMeshList = new List<PrefabMesh>();
+		gridMeshList   = new List<PrefabMesh>();
+
+		RenderShadowBlock();
 
 		keyList = new List<bool>()
 		{
@@ -84,7 +88,8 @@ public class GameManager : MonoBehaviour
 
 		func = new List<Coroutine>
 		{
-			StartCoroutine(BlockDown())
+			StartCoroutine(BlockDown()),
+			StartCoroutine(AngleCalculate()),
 		};
 	}
 
@@ -203,6 +208,8 @@ public class GameManager : MonoBehaviour
 
 			#endregion
 
+			#region KeyBinding
+
 			if (Input.GetKey(KeyCode.A) && !keyList[0])
 			{
 				MoveBlockLeft();
@@ -290,6 +297,9 @@ public class GameManager : MonoBehaviour
 				keyList[10] = true;
 				StartCoroutine(KeyRewind(10));
 			}
+
+			#endregion
+
 #endif
 		}
 	}
@@ -314,11 +324,13 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private float      initialCameraRotationX    = 15f;
 	[SerializeField] private float      cameraRotationConstraintX = 55f;
 	[SerializeField] private float      cameraSpeed               = 2000f;
-	[SerializeField] private int[]      gridSize                  = { 10, 22, 10 };
+	private                  int        viewAngle;
+	[SerializeField] private int[]      gridSize = { 10, 22, 10 };
 	public static            GameGrid   Grid;
 	private                  Vector3    startOffset;
 	private static           BlockQueue BlockQueue { get; set; }
 	private                  Block      currentBlock;
+	private                  Block      shadowBlock;
 	private Block CurrentBlock
 	{
 		get => currentBlock;
@@ -329,6 +341,7 @@ public class GameManager : MonoBehaviour
 		}
 	}
 	private                  List<PrefabMesh> blockMeshList;
+	private                  List<PrefabMesh> shadowMeshList;
 	private                  List<PrefabMesh> gridMeshList;
 	[SerializeField] private float            blockSize    = 1.0f;
 	[SerializeField] private float            downInterval = 1.0f;
@@ -362,6 +375,24 @@ public class GameManager : MonoBehaviour
 		keyList[id] = false;
 	}
 
+	private IEnumerator AngleCalculate()
+	{
+		while (true)
+		{
+			if (GameOver) break;
+
+			viewAngle = rotatorTr.rotation.eulerAngles.y switch
+			{
+				<= 45f or > 315f   => 0,
+				<= 135f and > 45f  => 1,
+				<= 225f and > 135f => 2,
+				_                  => 3
+			};
+			
+			yield return new WaitForSeconds(keyInterval);
+		}
+	}
+
 	private void Terminate()
 	{
 		foreach (Coroutine coroutine in func)
@@ -372,18 +403,22 @@ public class GameManager : MonoBehaviour
 		GameOver = false;
 	}
 
-	private bool BlockFits()
+	private static bool BlockFits(Block block)
 	{
-		return CurrentBlock.TilePositions().All(coord => Grid.IsEmpty(coord.X, coord.Y, coord.Z));
+		return block.TilePositions().All(coord => Grid.IsEmpty(coord.X, coord.Y, coord.Z));
 	}
 
 	private void RotateBlockXClockWise()
 	{
 		CurrentBlock.RotateXClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateXCounterClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
@@ -391,9 +426,13 @@ public class GameManager : MonoBehaviour
 	{
 		CurrentBlock.RotateXCounterClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateXClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
@@ -401,9 +440,13 @@ public class GameManager : MonoBehaviour
 	{
 		CurrentBlock.RotateYClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateYCounterClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
@@ -411,9 +454,13 @@ public class GameManager : MonoBehaviour
 	{
 		CurrentBlock.RotateYCounterClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateYClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
@@ -421,9 +468,13 @@ public class GameManager : MonoBehaviour
 	{
 		CurrentBlock.RotateZClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateZCounterClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
@@ -431,57 +482,77 @@ public class GameManager : MonoBehaviour
 	{
 		CurrentBlock.RotateZCounterClockWise();
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
 			CurrentBlock.RotateZClockWise();
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
 	private void MoveBlockLeft()
 	{
-		CurrentBlock.Move(Coord.Left);
+		CurrentBlock.Move(Coord.Left[viewAngle]);
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
-			CurrentBlock.Move(Coord.Right);
+			CurrentBlock.Move(Coord.Right[viewAngle]);
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
 	private void MoveBlockRight()
 	{
-		CurrentBlock.Move(Coord.Right);
+		CurrentBlock.Move(Coord.Right[viewAngle]);
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
-			CurrentBlock.Move(Coord.Left);
+			CurrentBlock.Move(Coord.Left[viewAngle]);
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
 	private void MoveBlockForward()
 	{
-		CurrentBlock.Move(Coord.Forward);
+		CurrentBlock.Move(Coord.Forward[viewAngle]);
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
-			CurrentBlock.Move(Coord.Backward);
+			CurrentBlock.Move(Coord.Backward[viewAngle]);
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
 	private void MoveBlockBackward()
 	{
-		CurrentBlock.Move(Coord.Backward);
+		CurrentBlock.Move(Coord.Backward[viewAngle]);
 
-		if (!BlockFits())
+		if (!BlockFits(CurrentBlock))
 		{
-			CurrentBlock.Move(Coord.Forward);
+			CurrentBlock.Move(Coord.Forward[viewAngle]);
+		}
+		else
+		{
+			RenderShadowBlock();
 		}
 	}
 
-	public void MoveBlockDown()
+	private void MoveBlockDown()
 	{
 		CurrentBlock.Move(Coord.Down);
 
-		if (BlockFits()) return;
+		if (BlockFits(CurrentBlock)) return;
 
 		CurrentBlock.Move(Coord.Up);
 		PlaceBlock();
@@ -492,7 +563,7 @@ public class GameManager : MonoBehaviour
 		do
 		{
 			CurrentBlock.Move(Coord.Down);
-		} while (BlockFits());
+		} while (BlockFits(CurrentBlock));
 
 		CurrentBlock.Move(Coord.Up);
 		PlaceBlock();
@@ -519,6 +590,7 @@ public class GameManager : MonoBehaviour
 		else
 		{
 			CurrentBlock = BlockQueue.GetAndUpdateBlock();
+			RenderShadowBlock();
 		}
 	}
 
@@ -528,7 +600,7 @@ public class GameManager : MonoBehaviour
 		RenderCurrentBlock();
 	}
 
-	private void RenderCurrentBlock()
+	private void ClearCurrentBlock()
 	{
 		foreach (PrefabMesh mesh in blockMeshList)
 		{
@@ -536,12 +608,47 @@ public class GameManager : MonoBehaviour
 		}
 
 		blockMeshList.Clear();
+	}
+
+	private void ClearShadowBlock()
+	{
+		foreach (PrefabMesh mesh in shadowMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+
+		shadowMeshList.Clear();
+	}
+
+	private void RenderCurrentBlock()
+	{
+		ClearCurrentBlock();
 
 		foreach (Coord coord in CurrentBlock.TilePositions())
 		{
 			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
 			blockMeshList.Add(new PrefabMesh("Prefabs/Block", startOffset + offset,
 			                                 Block.MatPath[CurrentBlock.GetId()]));
+		}
+	}
+
+	private void RenderShadowBlock()
+	{
+		ClearShadowBlock();
+		shadowBlock = CurrentBlock.CopyBlock();
+
+		do
+		{
+			shadowBlock.Move(Coord.Down);
+		} while (BlockFits(shadowBlock));
+
+		shadowBlock.Move(Coord.Up);
+
+		foreach (Coord coord in shadowBlock.TilePositions())
+		{
+			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
+			shadowMeshList.Add(new PrefabMesh("Prefabs/Block", startOffset + offset,
+			                                  Block.MatPath[0]));
 		}
 	}
 

@@ -32,17 +32,41 @@ public class Coord
 	public static Coord operator -(Coord param1, Coord param2)
 		=> param1 + (-param2);
 
-	public static readonly Coord Right    = new(1, 0, 0);
-	public static readonly Coord Left     = new(-1, 0, 0);
-	public static readonly Coord Up       = new(0,  -1, 0);
-	public static readonly Coord Down     = new(0,  1,  0);
-	public static readonly Coord Forward  = new(0,  0,  1);
-	public static readonly Coord Backward = new(0, 0, -1);
+	public static readonly Coord[] Right =
+	{
+		new(1, 0, 0),
+		new(0, 0, -1),
+		new(-1, 0, 0),
+		new(0, 0, 1)
+	};
+	public static readonly Coord[] Left     =
+	{
+		new(-1, 0, 0),
+		new(0, 0, 1),
+		new(1, 0, 0),
+		new(0, 0, -1)
+	};
+	public static readonly Coord[] Forward  =
+	{
+		new(0, 0, 1),
+		new(1, 0, 0),
+		new(0, 0, -1),
+		new(-1, 0, 0)
+	};
+	public static readonly Coord[] Backward =
+	{
+		new(0, 0, -1),
+		new(-1, 0, 0),
+		new(0, 0, 1),
+		new(1, 0, 0)
+	};
+	public static readonly Coord   Up       = new(0, -1, 0);
+	public static readonly Coord   Down     = new(0, 1, 0);
 }
 
 public interface IBlock
 {
-	int GetId();
+	int  GetId();
 	void Reset();
 	void Move(Coord move);
 	void RotateXClockWise();

@@ -8,17 +8,6 @@ public class Block : IBlock
 	private readonly int     size;
 	private          Coord   curPos;
 	private readonly Coord[] tile;
-	public static readonly string[] MatPath =
-	{
-		"",
-		"Materials/BlockI",
-		"Materials/BlockL",
-		"Materials/BlockT",
-		"Materials/BlockO",
-		"Materials/BlockJ",
-		"Materials/BlockZ",
-		"Materials/BlockS"
-	};
 
 	protected Block(int id, int size, Coord[] tile)
 	{
@@ -43,6 +32,23 @@ public class Block : IBlock
 			RotateYClockWise();
 		for (int i = 0; i < randRotate.Z; ++i)
 			RotateZClockWise();
+	}
+
+	public Block CopyBlock()
+	{
+		Coord[] tpTile = new Coord[tile.Length];
+
+		for (int i = 0; i < tile.Length; ++i)
+		{
+			tpTile[i] = tile[i];
+		}
+
+		Block tp = new Block(id, size, tpTile)
+		{
+			curPos = curPos
+		};
+
+		return tp;
 	}
 
 	public void Move(Coord move)
@@ -114,4 +120,16 @@ public class Block : IBlock
 			coord.Y = size - 1 - tp.X;
 		}
 	}
+	
+	public static readonly string[] MatPath =
+	{
+		"Materials/BlockShadow",
+		"Materials/BlockI",
+		"Materials/BlockL",
+		"Materials/BlockT",
+		"Materials/BlockO",
+		"Materials/BlockJ",
+		"Materials/BlockZ",
+		"Materials/BlockS"
+	};
 }
