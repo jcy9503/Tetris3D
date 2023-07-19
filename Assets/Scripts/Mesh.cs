@@ -202,11 +202,11 @@ public class CubeMesh
 /// </summary>
 public class PrefabMesh
 {
-	private GameObject Obj { get; set; }
+	public GameObject Obj { get; set; }
 
-	public PrefabMesh(GameObject mesh, Vector3 pos, string matPath)
+	public PrefabMesh(string meshPath, Vector3 pos, string matPath)
 	{
-		Obj                                       = Object.Instantiate(mesh, pos, Quaternion.identity);
+		Obj = Object.Instantiate(Resources.Load<GameObject>(meshPath), pos, Quaternion.identity);
 		Obj.GetComponent<MeshRenderer>().material = Resources.Load<Material>(matPath);
 	}
 }

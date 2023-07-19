@@ -160,7 +160,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.78021646, g: 1, b: 0.6367924, a: 0}
+  m_BackGroundColor: {r: 0.7623252, g: 0.56910825, b: 0.8207547, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -350,11 +350,10 @@ MonoBehaviour:
   initialCameraRotationX: 15
   cameraRotationConstraintX: 55
   cameraSpeed: 2000
-  gridSizeX: 10
-  gridSizeY: 22
-  gridSizeZ: 10
+  gridSize: 0a000000160000000a000000
   blockSize: 1
-  interval: 1
+  downInterval: 1
+  keyInterval: 0.2
 --- !u!4 &1878414748
 Transform:
   m_ObjectHideFlags: 0

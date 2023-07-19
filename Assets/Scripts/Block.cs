@@ -1,148 +1,117 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Block : IBlock
 {
-	private readonly uint       id;
-	private readonly uint       size;
-	private          Position   curPos;
-	private          bool[][][] tile;
-	private          string     matPath;
-
-	protected Block(uint id, uint size, bool[][][] tile, string matPath)
+	private readonly int     id;
+	private readonly int     size;
+	private          Coord   curPos;
+	private readonly Coord[] tile;
+	public static readonly string[] MatPath =
 	{
-		this.id      = id;
-		this.size    = size;
-		this.tile    = tile;
-		this.matPath = matPath;
+		"",
+		"Materials/BlockI",
+		"Materials/BlockL",
+		"Materials/BlockT",
+		"Materials/BlockO",
+		"Materials/BlockJ",
+		"Materials/BlockZ",
+		"Materials/BlockS"
+	};
+
+	protected Block(int id, int size, Coord[] tile)
+	{
+		this.id   = id;
+		this.size = size;
+		this.tile = tile;
 	}
 
-	public uint GetId() => id;
+	public int GetId() => id;
 
 	public void Reset()
 	{
-		Random randValue = new();
-		curPos = new Position(randValue.Next(0, GameManager.Grid.SizeX), 0, randValue.Next(0, GameManager.Grid.SizeZ));
+		Random randValue  = new();
+		Coord  randRotate = new(randValue.Next(0, 4), randValue.Next(0, 4), randValue.Next(0, 4));
+
+		curPos = new Coord(randValue.Next(0, GameManager.Grid.SizeX - size), 0,
+		                   randValue.Next(0, GameManager.Grid.SizeZ - size));
+
+		for (int i = 0; i < randRotate.X; ++i)
+			RotateXClockWise();
+		for (int i = 0; i < randRotate.Y; ++i)
+			RotateYClockWise();
+		for (int i = 0; i < randRotate.Z; ++i)
+			RotateZClockWise();
 	}
 
-	public void Move(Position move)
+	public void Move(Coord move)
 	{
 		curPos += move;
 	}
 
-	public IEnumerable<bool> TilePositions()
+	public IEnumerable<Coord> TilePositions()
 	{
-		foreach (bool[][] info in tile)
-		{
-			
-		}
+		return tile.Select(pos => new Coord(pos + curPos));
 	}
 
 	public void RotateXClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[i][size - 1 - k][j];
-				}
-			}
+			Coord tp = new(coord);
+			coord.Y = size - 1 - tp.Z;
+			coord.Z = tp.Y;
 		}
-
-		tile = tp;
 	}
 
 	public void RotateXCounterClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[i][k][size - 1 - j];
-				}
-			}
+			Coord tp = new(coord);
+			coord.Y = tp.Z;
+			coord.Z = size - 1 - tp.Y;
 		}
-
-		tile = tp;
 	}
 
 	public void RotateYClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[size - 1 - k][j][i];
-				}
-			}
+			Coord tp = new(coord);
+			coord.X = size - 1 - tp.Z;
+			coord.Z = tp.X;
 		}
-
-		tile = tp;
 	}
 
 	public void RotateYCounterClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[k][j][size - 1 - i];
-				}
-			}
+			Coord tp = new(coord);
+			coord.X = tp.Z;
+			coord.Z = size - 1 - tp.X;
 		}
-
-		tile = tp;
 	}
 
 	public void RotateZClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[size - 1 - j][i][k];
-				}
-			}
+			Coord tp = new(coord);
+			coord.X = size - 1 - tp.Y;
+			coord.Y = tp.X;
 		}
-
-		tile = tp;
 	}
 
 	public void RotateZCounterClockWise()
 	{
-		bool[][][] tp = tile;
-
-		for (int i = 0; i < size; ++i)
+		foreach (Coord coord in tile)
 		{
-			for (int j = 0; j < size; ++j)
-			{
-				for (int k = 0; k < size; ++k)
-				{
-					tp[i][j][k] = tile[j][size - 1 - i][k];
-				}
-			}
+			Coord tp = new(coord);
+			coord.X = tp.Y;
+			coord.Y = size - 1 - tp.X;
 		}
-
-		tile = tp;
 	}
 }

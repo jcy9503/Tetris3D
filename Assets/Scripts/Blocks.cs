@@ -1,190 +1,94 @@
 public class BlockI : Block
 {
-	public BlockI() : base(1, 4, new[]
+	public BlockI() : base(1, 4, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false }
-		},
-		new[]
-		{
-			new[] { false, true, false, false },
-			new[] { false, true, false, false },
-			new[] { false, true, false, false },
-			new[] { false, true, false, false }
-		},
-		new[]
-		{
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false }
-		},
-		new[]
-		{
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false },
-			new[] { false, false, false, false }
-		}
-	}, "Materials/BlockI")
+		new(0, 1, 1),
+		new(1, 1, 1),
+		new(2, 1, 1),
+		new(3, 1, 1)
+	})
 	{
 	}
 }
 
 public class BlockL : Block
 {
-	public BlockL() : base(2, 3, new[]
+	public BlockL() : base(2, 3, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		},
-		new[]
-		{
-			new[] { false, true, false },
-			new[] { false, true, false },
-			new[] { false, true, true }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		}
-	}, "Materials/BlockL")
+		new(1, 0, 1),
+		new(1, 1, 1),
+		new(1, 2, 1),
+		new(2, 2, 1)
+	})
 	{
 	}
 }
 
 public class BlockT : Block
 {
-	public BlockT() : base(3, 3, new[]
+	public BlockT() : base(3, 3, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		},
-		new[]
-		{
-			new[] { false, true, false },
-			new[] { false, true, true },
-			new[] { false, true, false }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		}
-	}, "Materials/BlockT")
+		new(0, 1, 1),
+		new(1, 1, 1),
+		new(2, 1, 1),
+		new(1, 2, 1)
+	})
 	{
 	}
 }
 
 public class BlockO : Block
 {
-	public BlockO() : base(4, 2, new[]
+	public BlockO() : base(4, 2, new Coord[]
 	{
-		new[]
-		{
-			new[] { true, true },
-			new[] { true, true }
-		},
-		new[]
-		{
-			new[] { true, true },
-			new[] { true, true }
-		}
-	}, "Materials/BlockO")
+		new(0, 0, 0),
+		new(1, 0, 0),
+		new(0, 0, 1),
+		new(1, 0, 1),
+		new(0, 1, 0),
+		new(1, 1, 0),
+		new(0, 1, 1),
+		new(1, 1, 1)
+	})
 	{
 	}
 }
 
 public class BlockJ : Block
 {
-	public BlockJ() : base(5, 3, new[]
+	public BlockJ() : base(5, 3, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		},
-		new[]
-		{
-			new[] { false, true, false },
-			new[] { false, true, false },
-			new[] { true, true, false }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		}
-	}, "Materials/BlockJ")
+		new(1, 0, 1),
+		new(1, 1, 1),
+		new(1, 2, 1),
+		new(0, 2, 1)
+	})
 	{
 	}
 }
 
 public class BlockZ : Block
 {
-	public BlockZ() : base(6, 3, new[]
+	public BlockZ() : base(6, 3, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { true, true, false },
-			new[] { false, true, true }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		}
-	}, "Materials/BlockZ")
+		new(0, 0, 1),
+		new(1, 0, 1),
+		new(1, 1, 1),
+		new(2, 1, 1)
+	})
 	{
 	}
 }
 
 public class BlockS : Block
 {
-	public BlockS() : base(7, 3, new[]
+	public BlockS() : base(7, 3, new Coord[]
 	{
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, true, true },
-			new[] { true, true, false }
-		},
-		new[]
-		{
-			new[] { false, false, false },
-			new[] { false, false, false },
-			new[] { false, false, false }
-		}
-	}, "Materials/BlockS")
+		new(0, 1, 1),
+		new(1, 1, 1),
+		new(1, 0, 1),
+		new(2, 0, 1)
+	})
 	{
 	}
 }
