@@ -1,3 +1,11 @@
+/*
+ * IBlock.cs
+ * ---------
+ * Made by Lucas Jeong
+ * Contains Coord class used for expressing integer-based 3D coordinate
+ * Contains Block interface.
+ */
+
 public class Coord
 {
 	public int X { get; set; }

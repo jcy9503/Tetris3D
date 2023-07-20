@@ -50,7 +50,9 @@ public class GameGrid
 			}
 		}
 
-		mesh = new CubeMesh("Grid", SizeX, SizeY, SizeZ, unit, true, "Materials/Grid", false, null);
+		mesh = new CubeMesh("GridMesh", SizeX, SizeY, SizeZ, unit, true, 
+		                    "Materials/Grid", false, null);
+		mesh.Obj.transform.parent = GameManager.GridObj.transform;
 	}
 
 	private void SetGrid(int x, int y, int z, float gridUnit)

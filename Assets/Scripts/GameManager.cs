@@ -55,63 +55,145 @@ public class GameManager : MonoBehaviour
 		shuttingDown = true;
 	}
 
+	private static bool       gameOver;
+	private static bool       isPause;
+	private        GameObject mainCamera;
+	private        Transform  rotatorTr;
+	private        Quaternion mementoRotation;
+	private        bool       checkDir;
+	private        bool       dir;
+	private bool Dir
+	{
+		get => dir;
+		set
+		{
+			if (value != dir)
+				checkDir = true;
+			dir = value;
+		}
+	}
+	private                  Vector2          clickPos;
+	[SerializeField] private float            initialCameraRotationX    = 15f;
+	[SerializeField] private float            cameraRotationConstraintX = 55f;
+	[SerializeField] private float            cameraSpeed               = 2000f;
+	[SerializeField] private float            cameraShakeAmount         = 0.5f;
+	[SerializeField] private float            cameraShakeTime           = 0.2f;
+	private                  bool             cameraShake;
+	private                  int              viewAngle;
+	[SerializeField] private int[]            gridSize = { 10, 22, 10 };
+	public static            GameGrid         Grid;
+	private                  Vector3          startOffset;
+	private static           BlockQueue       BlockQueue { get; set; }
+	private                  Block            currentBlock;
+	private                  Block            shadowBlock;
+	private                  bool             canSaveBlock;
+	private                  List<PrefabMesh> blockMeshList;
+	private                  List<PrefabMesh> shadowMeshList;
+	private                  List<PrefabMesh> gridMeshList;
+	[SerializeField] private float            blockSize    = 1.0f;
+	[SerializeField] private float            downInterval = 1.0f;
+	private                  List<bool>       keyUsing;
+	private                  List<float>      keyIntervals;
+	private const            float            defaultKeyInterval = 0.2f;
+	private enum KEY_VALUE
+	{
+		LEFT = 0,
+		RIGHT,
+		UP,
+		DOWN,
+		ROTATE_X,
+		ROTATE_X_INV,
+		ROTATE_Y,
+		ROTATE_Y_INV,
+		ROTATE_Z,
+		ROTATE_Z_INV,
+		SPACE,
+		LEFT_ALT,
+		ESC
+	}
+	private delegate         IEnumerator      LogicFunc();
+	private                  LogicFunc        logicMethods;
+	private                  List<Coroutine>  logicList;
+	private static           GameObject       blockObj;
+	private static           GameObject       shadowObj;
+	public static            GameObject       GridObj;
+
 	private void Awake()
 	{
-		GameOver = false;
+		gameOver = false;
+		isPause  = false;
 
-		mainCamera                     = Camera.main;
+		GridObj   = GameObject.Find("Grid");
+		blockObj  = GameObject.Find("Blocks");
+		shadowObj = GameObject.Find("Shadow");
+
+		mainCamera                     = GameObject.Find("Main Camera");
 		mainCamera!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
 		rotatorTr                      = GameObject.Find("Rotator").GetComponent<Transform>();
 		mementoRotation                = Quaternion.identity;
 		Dir                            = false;
 		checkDir                       = false;
 		viewAngle                      = 0;
+		cameraShake                    = false;
 
 		Grid       = new GameGrid(ref gridSize, blockSize);
 		BlockQueue = new BlockQueue();
 		startOffset = new Vector3(-Grid.SizeX / 2f + blockSize / 2,
 		                          Grid.SizeY  / 2f - blockSize / 2,
 		                          -Grid.SizeZ / 2f + blockSize / 2);
-		CurrentBlock = BlockQueue.GetAndUpdateBlock();
+		currentBlock = BlockQueue.GetAndUpdateBlock();
+		canSaveBlock = true;
 
 		blockMeshList  = new List<PrefabMesh>();
 		shadowMeshList = new List<PrefabMesh>();
 		gridMeshList   = new List<PrefabMesh>();
 
+		RenderCurrentBlock();
 		RenderShadowBlock();
 
-		keyList = new List<bool>()
+		keyUsing = new List<bool>
 		{
 			false, false, false, false, false, false,
-			false, false, false, false, false
+			false, false, false, false, false, false,
+			false,
+		};
+		keyIntervals = new List<float>()
+		{
+			defaultKeyInterval, defaultKeyInterval, defaultKeyInterval,
+			defaultKeyInterval, defaultKeyInterval, defaultKeyInterval,
+			defaultKeyInterval, defaultKeyInterval, defaultKeyInterval,
+			defaultKeyInterval, defaultKeyInterval, 0.1f,
+			defaultKeyInterval,
 		};
 
-		func = new List<Coroutine>
+		logicMethods = BlockDown;
+
+		logicList = new List<Coroutine>
 		{
-			StartCoroutine(BlockDown()),
+			StartCoroutine(logicMethods()),
 			StartCoroutine(AngleCalculate()),
 		};
 	}
 
 	private void Update()
 	{
-		if (GameOver)
+		if (gameOver)
 		{
 			Terminate();
 		}
-		else
+		else if (!isPause)
 		{
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
-			#region ScreenControl
+		#region ScreenControl
 
-			if (Input.GetMouseButtonDown(0))
+			if (Input.GetMouseButtonDown(0) && !cameraShake)
 			{
 				mementoRotation = rotatorTr.rotation;
 				clickPos        = Vector2.zero;
 			}
 
-			if (Input.GetMouseButton(0))
+			if (Input.GetMouseButton(0) && !cameraShake)
 			{
 				Vector2 angle = new(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"));
 
@@ -145,16 +227,16 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetMouseButtonUp(0))
+			if (Input.GetMouseButtonUp(0) && !cameraShake)
 			{
 				mementoRotation = rotatorTr.rotation;
 			}
 
-			if (Input.GetKey(KeyCode.UpArrow))
+			if (Input.GetKey(KeyCode.UpArrow) && !cameraShake)
 			{
 				Quaternion target = rotatorTr.rotation;
 
-				target *= Quaternion.AngleAxis(-0.2f, Vector3.right);
+				target *= Quaternion.AngleAxis(-1f, Vector3.right);
 
 				float angleX = target.eulerAngles.x;
 				angleX = angleX > 180 ? angleX - 360 : angleX;
@@ -165,11 +247,11 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetKey(KeyCode.DownArrow))
+			if (Input.GetKey(KeyCode.DownArrow) && !cameraShake)
 			{
 				Quaternion target = rotatorTr.rotation;
 
-				target *= Quaternion.AngleAxis(0.2f, Vector3.right);
+				target *= Quaternion.AngleAxis(1f, Vector3.right);
 
 				float angleX = target.eulerAngles.x;
 				angleX = angleX > 180 ? angleX - 360 : angleX;
@@ -180,12 +262,12 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetKey(KeyCode.LeftArrow))
+			if (Input.GetKey(KeyCode.LeftArrow) && !cameraShake)
 			{
 				Quaternion rotation = rotatorTr.rotation;
 				Quaternion target   = rotation;
 
-				target             *= Quaternion.AngleAxis(0.2f, Vector3.up);
+				target             *= Quaternion.AngleAxis(1f, Vector3.up);
 				target.eulerAngles =  new Vector3(target.eulerAngles.x, target.eulerAngles.y, 0f);
 
 				rotation = Quaternion.RotateTowards(rotation, target,
@@ -193,12 +275,12 @@ public class GameManager : MonoBehaviour
 				rotatorTr.rotation = rotation;
 			}
 
-			if (Input.GetKey(KeyCode.RightArrow))
+			if (Input.GetKey(KeyCode.RightArrow) && !cameraShake)
 			{
 				Quaternion rotation = rotatorTr.rotation;
 				Quaternion target   = rotation;
 
-				target             *= Quaternion.AngleAxis(-0.2f, Vector3.up);
+				target             *= Quaternion.AngleAxis(-1f, Vector3.up);
 				target.eulerAngles =  new Vector3(target.eulerAngles.x, target.eulerAngles.y, 0f);
 
 				rotation = Quaternion.RotateTowards(rotation, target,
@@ -206,160 +288,177 @@ public class GameManager : MonoBehaviour
 				rotatorTr.rotation = rotation;
 			}
 
-			#endregion
+			if (Input.GetKey(KeyCode.LeftShift) && canSaveBlock)
+			{
+				currentBlock = BlockQueue.SaveAndUpdateBlock(currentBlock);
+				canSaveBlock = false;
+				RefreshCurrentBlock();
+			}
 
-			#region KeyBinding
+		#endregion
 
-			if (Input.GetKey(KeyCode.A) && !keyList[0])
+		#region BlockControl
+
+			if (Input.GetKey(KeyCode.A) && !keyUsing[(int)KEY_VALUE.LEFT])
 			{
 				MoveBlockLeft();
-				RenderCurrentBlock();
-				keyList[0] = true;
-				StartCoroutine(KeyRewind(0));
+				keyUsing[(int)KEY_VALUE.LEFT] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.LEFT));
 			}
 
-			if (Input.GetKey(KeyCode.D) && !keyList[1])
+			if (Input.GetKey(KeyCode.D) && !keyUsing[(int)KEY_VALUE.RIGHT])
 			{
 				MoveBlockRight();
-				RenderCurrentBlock();
-				keyList[1] = true;
-				StartCoroutine(KeyRewind(1));
+				keyUsing[(int)KEY_VALUE.RIGHT] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.RIGHT));
 			}
 
-			if (Input.GetKey(KeyCode.W) && !keyList[2])
+			if (Input.GetKey(KeyCode.W) && !keyUsing[(int)KEY_VALUE.UP])
 			{
 				MoveBlockForward();
-				RenderCurrentBlock();
-				keyList[2] = true;
-				StartCoroutine(KeyRewind(2));
+				keyUsing[(int)KEY_VALUE.UP] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.UP));
 			}
 
-			if (Input.GetKey(KeyCode.S) && !keyList[3])
+			if (Input.GetKey(KeyCode.S) && !keyUsing[(int)KEY_VALUE.DOWN])
 			{
 				MoveBlockBackward();
-				RenderCurrentBlock();
-				keyList[3] = true;
-				StartCoroutine(KeyRewind(3));
+				keyUsing[(int)KEY_VALUE.DOWN] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.DOWN));
 			}
 
-			if ((Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad7)) && !keyList[4])
-			{
-				RotateBlockXClockWise();
-				RenderCurrentBlock();
-				keyList[4] = true;
-				StartCoroutine(KeyRewind(4));
-			}
-
-			if ((Input.GetKey(KeyCode.P) || Input.GetKey(KeyCode.Keypad8)) && !keyList[5])
+			if ((Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad7)) && !keyUsing[(int)KEY_VALUE.ROTATE_X])
 			{
 				RotateBlockXCounterClockWise();
-				RenderCurrentBlock();
-				keyList[5] = true;
-				StartCoroutine(KeyRewind(5));
+				keyUsing[(int)KEY_VALUE.ROTATE_X] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_X));
 			}
 
-			if ((Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad4)) && !keyList[6])
+			if ((Input.GetKey(KeyCode.P) || Input.GetKey(KeyCode.Keypad8)) && !keyUsing[(int)KEY_VALUE.ROTATE_X_INV])
+			{
+				RotateBlockXClockWise();
+				keyUsing[(int)KEY_VALUE.ROTATE_X_INV] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_X_INV));
+			}
+
+			if ((Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad4)) && !keyUsing[(int)KEY_VALUE.ROTATE_Y])
 			{
 				RotateBlockYClockWise();
-				RenderCurrentBlock();
-				keyList[6] = true;
-				StartCoroutine(KeyRewind(6));
+				keyUsing[(int)KEY_VALUE.ROTATE_Y] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Y));
 			}
 
-			if ((Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad5)) && !keyList[7])
+			if ((Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad5)) && !keyUsing[(int)KEY_VALUE.ROTATE_Y_INV])
 			{
 				RotateBlockYCounterClockWise();
-				RenderCurrentBlock();
-				keyList[7] = true;
-				StartCoroutine(KeyRewind(7));
+				keyUsing[(int)KEY_VALUE.ROTATE_Y_INV] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Y_INV));
 			}
 
-			if ((Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.Keypad1)) && !keyList[8])
-			{
-				RotateBlockZClockWise();
-				RenderCurrentBlock();
-				keyList[8] = true;
-				StartCoroutine(KeyRewind(8));
-			}
-
-			if ((Input.GetKey(KeyCode.Comma) || Input.GetKey(KeyCode.Keypad2)) && !keyList[9])
+			if ((Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.Keypad1)) && !keyUsing[(int)KEY_VALUE.ROTATE_Z])
 			{
 				RotateBlockZCounterClockWise();
-				RenderCurrentBlock();
-				keyList[9] = true;
-				StartCoroutine(KeyRewind(9));
+				keyUsing[(int)KEY_VALUE.ROTATE_Z] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Z));
 			}
 
-			if (Input.GetKey(KeyCode.Space) && !keyList[10])
+			if ((Input.GetKey(KeyCode.Comma) || Input.GetKey(KeyCode.Keypad2)) && !keyUsing[(int)KEY_VALUE.ROTATE_Z_INV])
+			{
+				RotateBlockZClockWise();
+				keyUsing[(int)KEY_VALUE.ROTATE_Z_INV] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Z_INV));
+			}
+
+			if (Input.GetKey(KeyCode.Space) && !keyUsing[(int)KEY_VALUE.SPACE])
 			{
 				MoveBlockDownWhole();
-				Render();
-				keyList[10] = true;
-				StartCoroutine(KeyRewind(10));
+				keyUsing[(int)KEY_VALUE.SPACE] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.SPACE));
 			}
 
-			#endregion
+			if (Input.GetKey(KeyCode.LeftAlt) && !keyUsing[(int)KEY_VALUE.LEFT_ALT])
+			{
+				MoveBlockDown();
+				keyUsing[(int)KEY_VALUE.LEFT_ALT] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.LEFT_ALT));
+			}
+
+		#endregion
+
+		#region GameManagement
+
+			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
+			{
+				isPause = true;
+				GamePause();
+				keyUsing[(int)KEY_VALUE.ESC] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
+			}
+
+		#endregion
+
+#elif UNITY_ANDROID
+		#region ScreenControl
+
+			if (Input.touchCount == 1 && !cameraShake)
+			{
+				Touch touch = Input.GetTouch(0);
+
+				if (touch.phase == TouchPhase.Began)
+				{
+					mementoRotation = rotatorTr.rotation;
+					clickPos = Vector2.zero;
+				}
+			}
+
+		#endregion
+
+		#region BlockControl
+
+		#endregion
+
+#endif
+		}
+
+		else if (isPause)
+		{
+#if UNITY_EDITOR || UNITY_STANDALONE_WIN
+
+			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
+			{
+				GameResume();
+				isPause      = false;
+				keyUsing[(int)KEY_VALUE.ESC] = true;
+				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
+			}
 
 #endif
 		}
 	}
 
-	private static bool       GameOver { get; set; }
-	private        Camera     mainCamera;
-	private        Transform  rotatorTr;
-	private        Quaternion mementoRotation;
-	private        bool       checkDir;
-	private        bool       dir;
-	private bool Dir
+	private void GamePause()
 	{
-		get => dir;
-		set
+		foreach (Coroutine coroutine in logicList)
 		{
-			if (value != dir)
-				checkDir = true;
-			dir = value;
+			StopCoroutine(coroutine);
 		}
 	}
-	private                  Vector2    clickPos;
-	[SerializeField] private float      initialCameraRotationX    = 15f;
-	[SerializeField] private float      cameraRotationConstraintX = 55f;
-	[SerializeField] private float      cameraSpeed               = 2000f;
-	[SerializeField] private float      cameraShakeAmount         = 3f;
-	[SerializeField] private float      cameraShakeTime           = 1f;
-	private                  int        viewAngle;
-	[SerializeField] private int[]      gridSize = { 10, 22, 10 };
-	public static            GameGrid   Grid;
-	private                  Vector3    startOffset;
-	private static           BlockQueue BlockQueue { get; set; }
-	private                  Block      currentBlock;
-	private                  Block      shadowBlock;
-	private Block CurrentBlock
+
+	private void GameResume()
 	{
-		get => currentBlock;
-		set
-		{
-			currentBlock = value;
-			currentBlock.Reset();
-		}
+		logicList.Add(StartCoroutine(logicMethods()));
+		logicList.Add(StartCoroutine(AngleCalculate()));
 	}
-	private                  List<PrefabMesh> blockMeshList;
-	private                  List<PrefabMesh> shadowMeshList;
-	private                  List<PrefabMesh> gridMeshList;
-	[SerializeField] private float            blockSize    = 1.0f;
-	[SerializeField] private float            downInterval = 1.0f;
-	[SerializeField] private float            keyInterval  = 0.2f;
-	private                  List<bool>       keyList;
-	private                  List<Coroutine>  func;
 
 	private IEnumerator BlockDown()
 	{
 		while (true)
 		{
-			Render();
+			RenderCurrentBlock();
 
 			if (!Grid.IsPlaneEmpty(0))
 			{
-				GameOver = true;
+				gameOver = true;
 
 				break;
 			}
@@ -372,16 +471,16 @@ public class GameManager : MonoBehaviour
 
 	private IEnumerator KeyRewind(int id)
 	{
-		yield return new WaitForSeconds(keyInterval);
+		yield return new WaitForSeconds(keyIntervals[id]);
 
-		keyList[id] = false;
+		keyUsing[id] = false;
 	}
 
 	private IEnumerator AngleCalculate()
 	{
 		while (true)
 		{
-			if (GameOver) break;
+			if (gameOver) break;
 
 			viewAngle = rotatorTr.rotation.eulerAngles.y switch
 			{
@@ -390,35 +489,48 @@ public class GameManager : MonoBehaviour
 				<= 225f and > 135f => 2,
 				_                  => 3
 			};
-			
-			yield return new WaitForSeconds(keyInterval);
+
+			yield return new WaitForSeconds(defaultKeyInterval);
 		}
 	}
 
 	private IEnumerator CameraShake()
 	{
-		float   timer = 0;
-		Vector3 pos   = mainCamera.transform.position;
+		cameraShake = true;
+
+		yield return StartCoroutine(RotatorShake());
+
+		RotatorPositionClear();
+	}
+
+	private IEnumerator RotatorShake()
+	{
+		float timer = 0;
 
 		while (timer <= cameraShakeTime)
 		{
-			mainCamera.transform.position =  (Vector3)Random.insideUnitCircle * cameraShakeAmount + pos;
-			timer                         += Time.deltaTime;
+			rotatorTr.position =  (Vector3)Random.insideUnitCircle * cameraShakeAmount;
+			timer              += Time.deltaTime;
 
 			yield return null;
 		}
+	}
 
-		mainCamera.transform.position = pos;
+	private void RotatorPositionClear()
+	{
+		rotatorTr.position = Vector3.zero;
+
+		cameraShake = false;
 	}
 
 	private void Terminate()
 	{
-		foreach (Coroutine coroutine in func)
+		foreach (Coroutine coroutine in logicList)
 		{
 			StopCoroutine(coroutine);
 		}
 
-		GameOver = false;
+		gameOver = false;
 	}
 
 	private static bool BlockFits(Block block)
@@ -428,168 +540,341 @@ public class GameManager : MonoBehaviour
 
 	private void RotateBlockXClockWise()
 	{
-		CurrentBlock.RotateXClockWise();
-
-		if (!BlockFits(CurrentBlock))
+		switch (viewAngle)
 		{
-			CurrentBlock.RotateXCounterClockWise();
+			case 0:
+				currentBlock.RotateXClockWise();
+
+				break;
+
+			case 1:
+				currentBlock.RotateZCounterClockWise();
+
+				break;
+
+			case 2:
+				currentBlock.RotateXCounterClockWise();
+
+				break;
+
+			case 3:
+				currentBlock.RotateZClockWise();
+
+				break;
+		}
+
+		if (!BlockFits(currentBlock))
+		{
+			switch (viewAngle)
+			{
+				case 0:
+					currentBlock.RotateXCounterClockWise();
+
+					break;
+
+				case 1:
+					currentBlock.RotateZClockWise();
+
+					break;
+
+				case 2:
+					currentBlock.RotateXClockWise();
+
+					break;
+
+				case 3:
+					currentBlock.RotateZCounterClockWise();
+
+					break;
+			}
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void RotateBlockXCounterClockWise()
 	{
-		CurrentBlock.RotateXCounterClockWise();
-
-		if (!BlockFits(CurrentBlock))
+		switch (viewAngle)
 		{
-			CurrentBlock.RotateXClockWise();
+			case 0:
+				currentBlock.RotateXCounterClockWise();
+
+				break;
+
+			case 1:
+				currentBlock.RotateZClockWise();
+
+				break;
+
+			case 2:
+				currentBlock.RotateXClockWise();
+
+				break;
+
+			case 3:
+				currentBlock.RotateZCounterClockWise();
+
+				break;
+		}
+
+		if (!BlockFits(currentBlock))
+		{
+			switch (viewAngle)
+			{
+				case 0:
+					currentBlock.RotateXClockWise();
+
+					break;
+
+				case 1:
+					currentBlock.RotateZCounterClockWise();
+
+					break;
+
+				case 2:
+					currentBlock.RotateXCounterClockWise();
+
+					break;
+
+				case 3:
+					currentBlock.RotateZClockWise();
+
+					break;
+			}
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void RotateBlockYClockWise()
 	{
-		CurrentBlock.RotateYClockWise();
+		currentBlock.RotateYClockWise();
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.RotateYCounterClockWise();
+			currentBlock.RotateYCounterClockWise();
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void RotateBlockYCounterClockWise()
 	{
-		CurrentBlock.RotateYCounterClockWise();
+		currentBlock.RotateYCounterClockWise();
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.RotateYClockWise();
+			currentBlock.RotateYClockWise();
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void RotateBlockZClockWise()
 	{
-		CurrentBlock.RotateZClockWise();
-
-		if (!BlockFits(CurrentBlock))
+		switch (viewAngle)
 		{
-			CurrentBlock.RotateZCounterClockWise();
+			case 0:
+				currentBlock.RotateZClockWise();
+
+				break;
+
+			case 1:
+				currentBlock.RotateXClockWise();
+
+				break;
+
+			case 2:
+				currentBlock.RotateZCounterClockWise();
+
+				break;
+
+			case 3:
+				currentBlock.RotateXCounterClockWise();
+
+				break;
+		}
+
+		if (!BlockFits(currentBlock))
+		{
+			switch (viewAngle)
+			{
+				case 0:
+					currentBlock.RotateZCounterClockWise();
+
+					break;
+
+				case 1:
+					currentBlock.RotateXCounterClockWise();
+
+					break;
+
+				case 2:
+					currentBlock.RotateZClockWise();
+
+					break;
+
+				case 3:
+					currentBlock.RotateXClockWise();
+
+					break;
+			}
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void RotateBlockZCounterClockWise()
 	{
-		CurrentBlock.RotateZCounterClockWise();
-
-		if (!BlockFits(CurrentBlock))
+		switch (viewAngle)
 		{
-			CurrentBlock.RotateZClockWise();
+			case 0:
+				currentBlock.RotateZCounterClockWise();
+
+				break;
+
+			case 1:
+				currentBlock.RotateXCounterClockWise();
+
+				break;
+
+			case 2:
+				currentBlock.RotateZClockWise();
+
+				break;
+
+			case 3:
+				currentBlock.RotateXClockWise();
+
+				break;
+		}
+
+		if (!BlockFits(currentBlock))
+		{
+			switch (viewAngle)
+			{
+				case 0:
+					currentBlock.RotateZClockWise();
+
+					break;
+
+				case 1:
+					currentBlock.RotateXClockWise();
+
+					break;
+
+				case 2:
+					currentBlock.RotateZCounterClockWise();
+
+					break;
+
+				case 3:
+					currentBlock.RotateXCounterClockWise();
+
+					break;
+			}
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void MoveBlockLeft()
 	{
-		CurrentBlock.Move(Coord.Left[viewAngle]);
+		currentBlock.Move(Coord.Left[viewAngle]);
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.Move(Coord.Right[viewAngle]);
+			currentBlock.Move(Coord.Right[viewAngle]);
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void MoveBlockRight()
 	{
-		CurrentBlock.Move(Coord.Right[viewAngle]);
+		currentBlock.Move(Coord.Right[viewAngle]);
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.Move(Coord.Left[viewAngle]);
+			currentBlock.Move(Coord.Left[viewAngle]);
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void MoveBlockForward()
 	{
-		CurrentBlock.Move(Coord.Forward[viewAngle]);
+		currentBlock.Move(Coord.Forward[viewAngle]);
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.Move(Coord.Backward[viewAngle]);
+			currentBlock.Move(Coord.Backward[viewAngle]);
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void MoveBlockBackward()
 	{
-		CurrentBlock.Move(Coord.Backward[viewAngle]);
+		currentBlock.Move(Coord.Backward[viewAngle]);
 
-		if (!BlockFits(CurrentBlock))
+		if (!BlockFits(currentBlock))
 		{
-			CurrentBlock.Move(Coord.Forward[viewAngle]);
+			currentBlock.Move(Coord.Forward[viewAngle]);
 		}
 		else
 		{
-			RenderShadowBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
 	private void MoveBlockDown()
 	{
-		CurrentBlock.Move(Coord.Down);
+		currentBlock.Move(Coord.Down);
 
-		if (BlockFits(CurrentBlock)) return;
+		if (BlockFits(currentBlock))
+		{
+			RenderCurrentBlock();
 
-		CurrentBlock.Move(Coord.Up);
+			return;
+		}
+
+		currentBlock.Move(Coord.Up);
 		PlaceBlock();
 	}
 
 	private void MoveBlockDownWhole()
 	{
 		int num = 0;
-		
+
 		do
 		{
-			CurrentBlock.Move(Coord.Down);
+			currentBlock.Move(Coord.Down);
 			++num;
-		} while (BlockFits(CurrentBlock));
+		} while (BlockFits(currentBlock));
 
 		if (num > 2)
 			StartCoroutine(CameraShake());
-		
-		CurrentBlock.Move(Coord.Up);
+
+		currentBlock.Move(Coord.Up);
 		PlaceBlock();
 	}
 
@@ -600,28 +885,30 @@ public class GameManager : MonoBehaviour
 
 	private void PlaceBlock()
 	{
-		foreach (Coord coord in CurrentBlock.TilePositions())
+		foreach (Coord coord in currentBlock.TilePositions())
 		{
-			Grid[coord.X, coord.Y, coord.Z] = CurrentBlock.GetId();
+			Grid[coord.X, coord.Y, coord.Z] = currentBlock.GetId();
 		}
 
 		Grid.ClearFullRows();
+		RenderGrid();
 
 		if (IsGamerOver())
 		{
-			GameOver = true;
+			gameOver = true;
 		}
 		else
 		{
-			CurrentBlock = BlockQueue.GetAndUpdateBlock();
-			RenderShadowBlock();
+			canSaveBlock = true;
+			currentBlock = BlockQueue.GetAndUpdateBlock();
+			RefreshCurrentBlock();
 		}
 	}
 
-	private void Render()
+	private void RefreshCurrentBlock()
 	{
-		RenderGrid();
 		RenderCurrentBlock();
+		RenderShadowBlock();
 	}
 
 	private void ClearCurrentBlock()
@@ -644,22 +931,34 @@ public class GameManager : MonoBehaviour
 		shadowMeshList.Clear();
 	}
 
+	private void ClearGrid()
+	{
+		foreach (PrefabMesh mesh in gridMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+
+		gridMeshList.Clear();
+	}
+
 	private void RenderCurrentBlock()
 	{
 		ClearCurrentBlock();
 
-		foreach (Coord coord in CurrentBlock.TilePositions())
+		foreach (Coord coord in currentBlock.TilePositions())
 		{
-			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
-			blockMeshList.Add(new PrefabMesh("Prefabs/Block", startOffset + offset,
-			                                 Block.MatPath[CurrentBlock.GetId()]));
+			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
+			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[currentBlock.GetId()]);
+
+			blockMeshList.Add(mesh);
+			mesh.Obj.transform.parent = blockObj.transform;
 		}
 	}
 
 	private void RenderShadowBlock()
 	{
 		ClearShadowBlock();
-		shadowBlock = CurrentBlock.CopyBlock();
+		shadowBlock = currentBlock.CopyBlock();
 
 		do
 		{
@@ -670,20 +969,17 @@ public class GameManager : MonoBehaviour
 
 		foreach (Coord coord in shadowBlock.TilePositions())
 		{
-			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
-			shadowMeshList.Add(new PrefabMesh("Prefabs/Block", startOffset + offset,
-			                                  Block.MatPath[0]));
+			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
+			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[0]);
+
+			shadowMeshList.Add(mesh);
+			mesh.Obj.transform.parent = shadowObj.transform;
 		}
 	}
 
 	private void RenderGrid()
 	{
-		foreach (PrefabMesh mesh in gridMeshList)
-		{
-			Destroy(mesh.Obj);
-		}
-
-		gridMeshList.Clear();
+		ClearGrid();
 
 		for (int i = 0; i < Grid.SizeX; ++i)
 		{
@@ -693,9 +989,11 @@ public class GameManager : MonoBehaviour
 				{
 					if (Grid[i, j, k] != 0)
 					{
-						Vector3 offset = new(i, -j, k);
-						gridMeshList.Add(new PrefabMesh("Prefabs/Block", startOffset + offset,
-						                                Block.MatPath[Grid[i, j, k]]));
+						Vector3    offset = new(i, -j, k);
+						PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1]);
+
+						gridMeshList.Add(mesh);
+						mesh.Obj.transform.parent = GridObj.transform;
 					}
 				}
 			}

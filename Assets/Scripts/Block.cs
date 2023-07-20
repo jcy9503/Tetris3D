@@ -1,3 +1,10 @@
+/*
+ * Block.cs
+ * --------
+ * Made by Lucas Jeong
+ * Contains basic Block class.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,6 +137,7 @@ public class Block : IBlock
 		"Materials/BlockO",
 		"Materials/BlockJ",
 		"Materials/BlockZ",
-		"Materials/BlockS"
+		"Materials/BlockS",
+		"Materials/BlockGrid"
 	};
 }

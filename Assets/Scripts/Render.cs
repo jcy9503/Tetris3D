@@ -1,8 +1,8 @@
 /*
- * Mesh.cs
- * -------
+ * Render.cs
+ * ---------
  * Made by Lucas Jeong
- * Contains rendering mesh - related class.
+ * Contains rendering related class.
  */
 
 using UnityEngine;
