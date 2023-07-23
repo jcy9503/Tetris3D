@@ -10,6 +10,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
+using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
@@ -55,13 +57,16 @@ public class GameManager : MonoBehaviour
 		shuttingDown = true;
 	}
 
-	private static bool       gameOver;
-	private static bool       isPause;
-	private        GameObject mainCamera;
-	private        Transform  rotatorTr;
-	private        Quaternion mementoRotation;
-	private        bool       checkDir;
-	private        bool       dir;
+	private static           bool gameOver;
+	private static           bool isPause;
+	public static            bool TestMode;
+	[SerializeField] private bool testMode;
+
+	private GameObject mainCamera;
+	private Transform  rotatorTr;
+	private Quaternion mementoRotation;
+	private bool       checkDir;
+	private bool       dir;
 	private bool Dir
 	{
 		get => dir;
@@ -72,20 +77,22 @@ public class GameManager : MonoBehaviour
 			dir = value;
 		}
 	}
-	private                  Vector2          clickPos;
-	[SerializeField] private float            initialCameraRotationX    = 15f;
-	[SerializeField] private float            cameraRotationConstraintX = 55f;
-	[SerializeField] private float            cameraSpeed               = 2000f;
-	[SerializeField] private float            cameraShakeAmount         = 0.5f;
-	[SerializeField] private float            cameraShakeTime           = 0.2f;
-	private                  bool             cameraShake;
-	private                  int              viewAngle;
-	[SerializeField] private int[]            gridSize = { 10, 22, 10 };
-	public static            GameGrid         Grid;
-	private                  Vector3          startOffset;
-	private static           BlockQueue       BlockQueue { get; set; }
-	private                  Block            currentBlock;
-	private                  Block            shadowBlock;
+	private                  Vector2    clickPos;
+	[SerializeField] private float      initialCameraRotationX    = 15f;
+	[SerializeField] private float      cameraRotationConstraintX = 55f;
+	[SerializeField] private float      cameraSpeed               = 2000f;
+	[SerializeField] private float      cameraShakeAmount         = 0.5f;
+	[SerializeField] private float      cameraShakeTime           = 0.2f;
+	private                  bool       cameraShake;
+	private                  int        viewAngle;
+	[SerializeField] private int[]      gridSize = { 10, 22, 10 };
+	public static            GameGrid   Grid;
+	private                  Vector3    startOffset;
+	private static           BlockQueue BlockQueue { get; set; }
+	private                  Block      currentBlock;
+	private                  Block      shadowBlock;
+	private static readonly  int        alpha = Shader.PropertyToID("_Alpha");
+
 	private                  bool             canSaveBlock;
 	private                  List<PrefabMesh> blockMeshList;
 	private                  List<PrefabMesh> shadowMeshList;
@@ -125,6 +132,7 @@ public class GameManager : MonoBehaviour
 	{
 		gameOver = false;
 		isPause  = false;
+		TestMode = testMode;
 
 		GridObj   = GameObject.Find("Grid");
 		blockObj  = GameObject.Find("Blocks");
@@ -139,7 +147,17 @@ public class GameManager : MonoBehaviour
 		viewAngle                      = 0;
 		cameraShake                    = false;
 
-		Grid       = new GameGrid(ref gridSize, blockSize);
+		if (TestMode)
+		{
+			gridSize[0] = 4;
+			gridSize[2] = 4;
+			Grid        = new GameGrid(ref gridSize, blockSize);
+		}
+		else
+		{
+			Grid = new GameGrid(ref gridSize, blockSize);
+		}
+
 		BlockQueue = new BlockQueue();
 		startOffset = new Vector3(-Grid.SizeX / 2f + blockSize / 2,
 		                          Grid.SizeY  / 2f - blockSize / 2,
@@ -422,6 +440,18 @@ public class GameManager : MonoBehaviour
 		#endregion
 
 #endif
+
+			#region Effect
+
+			if (shadowMeshList.Count > 0)
+			{
+				foreach (PrefabMesh mesh in shadowMeshList)
+				{
+					mesh.Renderer.sharedMaterial.SetFloat(alpha, Mathf.PingPong(Time.time, 0.85f) + 0.15f);
+				}
+			}
+
+			#endregion
 		}
 
 		else if (isPause)
@@ -862,7 +892,7 @@ public class GameManager : MonoBehaviour
 		}
 
 		currentBlock.Move(Coord.Up);
-		PlaceBlock();
+		StartCoroutine(PlaceBlock());
 	}
 
 	private void MoveBlockDownWhole()
@@ -879,7 +909,7 @@ public class GameManager : MonoBehaviour
 			StartCoroutine(CameraShake());
 
 		currentBlock.Move(Coord.Up);
-		PlaceBlock();
+		StartCoroutine(PlaceBlock());
 	}
 
 	private static bool IsGamerOver()
@@ -887,41 +917,43 @@ public class GameManager : MonoBehaviour
 		return !(Grid.IsPlaneEmpty(-1) && Grid.IsPlaneEmpty(0));
 	}
 
-	private static IEnumerator ClearMeshEffect(PrefabMesh mesh)
+	private IEnumerator ClearMeshEffect(int start, int end)
 	{
-		while (mesh.Obj.transform.localScale.magnitude < 2f)
+		while (gridMeshList[end].Obj.transform.localScale.magnitude < 3f)
 		{
-			mesh.Obj.transform.localScale += new Vector3(0.1f, 0.1f, 0.1f);
+			float alphaSet = 1.0f;
+			for (int i = start; i < end; ++i)
+			{
+				gridMeshList[i].Obj.transform.localScale += new Vector3(0.1f, 0.1f, 0.1f);
+				gridMeshList[i].Renderer.sharedMaterial.SetFloat(alpha, alphaSet);
 
-			yield return new WaitForSeconds(0.02f);
-		}
+				yield return new WaitForSeconds(0.05f);
 
-		while (mesh.Obj.transform.localScale.magnitude > 0f)
-		{
-			mesh.Obj.transform.localScale -= new Vector3(0.1f, 0.1f, 0.1f);
-
-			yield return new WaitForSeconds(0.02f);
+				alphaSet -= 0.05f;
+			}
 		}
 	}
 
 	private IEnumerator ClearEffect(List<int> cleared)
 	{
 		if (cleared.Count == 0) yield break;
-		
-		isPause = true;
-		int idx = 1;
-		
-		foreach (PrefabMesh mesh in gridMeshList)
-		{
-			if (cleared[^idx] == mesh.Pos.Y)
-			{
-				yield return StartCoroutine(ClearMeshEffect(mesh));
-			}
-			else if (mesh.Pos.Y > cleared[^idx])
-			{
-				if (idx == cleared.Count)
-					break;
 
+		isPause = true;
+
+		int idx   = 1;
+		int start = -1;
+
+		for (int i = 0; i < gridMeshList.Count; ++i)
+		{
+			if (start == -1 && cleared[^idx] == gridMeshList[i].Pos.Y)
+			{
+				start = i;
+			}
+			else if (start != -1 && gridMeshList[i].Pos.Y > cleared[^idx])
+			{
+				yield return StartCoroutine(ClearMeshEffect(start, i));
+
+				start = -1;
 				++idx;
 			}
 		}
@@ -929,7 +961,7 @@ public class GameManager : MonoBehaviour
 		isPause = false;
 	}
 
-	private void PlaceBlock()
+	private IEnumerator PlaceBlock()
 	{
 		foreach (Coord coord in currentBlock.TilePositions())
 		{
@@ -937,7 +969,9 @@ public class GameManager : MonoBehaviour
 		}
 
 		List<int> cleared = Grid.ClearFullRows();
-		StartCoroutine(ClearEffect(cleared));
+
+		yield return StartCoroutine(ClearEffect(cleared));
+
 		RenderGrid();
 
 		if (IsGamerOver())
@@ -994,8 +1028,9 @@ public class GameManager : MonoBehaviour
 
 		foreach (Coord coord in currentBlock.TilePositions())
 		{
-			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[currentBlock.GetId()], coord);
+			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
+			PrefabMesh mesh = new("Prefabs/Block", startOffset + offset,
+			                      Block.MatPath[currentBlock.GetId()], coord, ShadowCastingMode.On);
 
 			blockMeshList.Add(mesh);
 			mesh.Obj.transform.parent = blockObj.transform;
@@ -1016,8 +1051,9 @@ public class GameManager : MonoBehaviour
 
 		foreach (Coord coord in shadowBlock.TilePositions())
 		{
-			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[0], coord);
+			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
+			PrefabMesh mesh = new("Prefabs/Block", startOffset + offset,
+			                      Block.MatPath[0], coord, ShadowCastingMode.Off);
 
 			shadowMeshList.Add(mesh);
 			mesh.Obj.transform.parent = shadowObj.transform;
@@ -1028,17 +1064,17 @@ public class GameManager : MonoBehaviour
 	{
 		ClearGrid();
 
-		for (int i = 0; i < Grid.SizeX; ++i)
+		for (int i = 0; i < Grid.SizeY; ++i)
 		{
-			for (int j = 0; j < Grid.SizeY; ++j)
+			for (int j = 0; j < Grid.SizeX; ++j)
 			{
 				for (int k = 0; k < Grid.SizeZ; ++k)
 				{
-					if (Grid[i, j, k] != 0)
+					if (Grid[j, i, k] != 0)
 					{
-						Vector3 offset = new(i, -j, k);
+						Vector3 offset = new(j, -i, k);
 						PrefabMesh mesh = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1],
-						                      new(i, j, k));
+						                      new(j, i, k), ShadowCastingMode.On);
 
 						gridMeshList.Add(mesh);
 						mesh.Obj.transform.parent = GridObj.transform;

@@ -6,6 +6,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// cube mesh rendering class using UnityEngine
@@ -202,13 +203,16 @@ public class CubeMesh
 /// </summary>
 public class PrefabMesh
 {
-	public GameObject Obj { get; set; }
-	public Coord      Pos;
+	public          GameObject Obj { get; set; }
+	public readonly Coord      Pos;
+	public          Renderer   Renderer;
 
-	public PrefabMesh(string meshPath, Vector3 pos, string matPath, Coord coord)
+	public PrefabMesh(string meshPath, Vector3 pos, string matPath, Coord coord, ShadowCastingMode shadowMode)
 	{
-		Obj = Object.Instantiate(Resources.Load<GameObject>(meshPath), pos, Quaternion.identity);
-		Obj.GetComponent<MeshRenderer>().material = Resources.Load<Material>(matPath);
-		Pos = coord;
+		Obj                        = Object.Instantiate(Resources.Load<GameObject>(meshPath), pos, Quaternion.identity);
+		Renderer                   = Obj.GetComponent<Renderer>();
+		Renderer.shadowCastingMode = shadowMode;
+		Renderer.sharedMaterial    = Resources.Load<Material>(matPath);
+		Pos                        = coord;
 	}
 }

@@ -15,6 +15,11 @@ public class BlockQueue
 
 	private static Block RandomBlock()
 	{
+		if (GameManager.TestMode)
+		{
+			return blockCreateFunc.BlockSpawn(3);
+		}
+		
 		Random randValue = new();
 
 		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockTypeNum));
