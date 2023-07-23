@@ -95,6 +95,7 @@ public class GameManager : MonoBehaviour
 	private                  List<bool>       keyUsing;
 	private                  List<float>      keyIntervals;
 	private const            float            defaultKeyInterval = 0.2f;
+
 	private enum KEY_VALUE
 	{
 		LEFT = 0,
@@ -111,12 +112,14 @@ public class GameManager : MonoBehaviour
 		LEFT_ALT,
 		ESC
 	}
-	private delegate         IEnumerator      LogicFunc();
-	private                  LogicFunc        logicMethods;
-	private                  List<Coroutine>  logicList;
-	private static           GameObject       blockObj;
-	private static           GameObject       shadowObj;
-	public static            GameObject       GridObj;
+
+	private delegate IEnumerator LogicFunc();
+
+	private        LogicFunc       logicMethods;
+	private        List<Coroutine> logicList;
+	private static GameObject      blockObj;
+	private static GameObject      shadowObj;
+	public static  GameObject      GridObj;
 
 	private void Awake()
 	{
@@ -185,7 +188,7 @@ public class GameManager : MonoBehaviour
 		{
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
-		#region ScreenControl
+			#region ScreenControl
 
 			if (Input.GetMouseButtonDown(0) && !cameraShake)
 			{
@@ -295,9 +298,9 @@ public class GameManager : MonoBehaviour
 				RefreshCurrentBlock();
 			}
 
-		#endregion
+			#endregion
 
-		#region BlockControl
+			#region BlockControl
 
 			if (Input.GetKey(KeyCode.A) && !keyUsing[(int)KEY_VALUE.LEFT])
 			{
@@ -362,7 +365,8 @@ public class GameManager : MonoBehaviour
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Z));
 			}
 
-			if ((Input.GetKey(KeyCode.Comma) || Input.GetKey(KeyCode.Keypad2)) && !keyUsing[(int)KEY_VALUE.ROTATE_Z_INV])
+			if ((Input.GetKey(KeyCode.Comma) || Input.GetKey(KeyCode.Keypad2)) &&
+			    !keyUsing[(int)KEY_VALUE.ROTATE_Z_INV])
 			{
 				RotateBlockZClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_Z_INV] = true;
@@ -383,9 +387,9 @@ public class GameManager : MonoBehaviour
 				StartCoroutine(KeyRewind((int)KEY_VALUE.LEFT_ALT));
 			}
 
-		#endregion
+			#endregion
 
-		#region GameManagement
+			#region GameManagement
 
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
@@ -395,7 +399,7 @@ public class GameManager : MonoBehaviour
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
 			}
 
-		#endregion
+			#endregion
 
 #elif UNITY_ANDROID
 		#region ScreenControl
@@ -427,7 +431,7 @@ public class GameManager : MonoBehaviour
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
 				GameResume();
-				isPause      = false;
+				isPause                      = false;
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
 			}
@@ -883,6 +887,48 @@ public class GameManager : MonoBehaviour
 		return !(Grid.IsPlaneEmpty(-1) && Grid.IsPlaneEmpty(0));
 	}
 
+	private static IEnumerator ClearMeshEffect(PrefabMesh mesh)
+	{
+		while (mesh.Obj.transform.localScale.magnitude < 2f)
+		{
+			mesh.Obj.transform.localScale += new Vector3(0.1f, 0.1f, 0.1f);
+
+			yield return new WaitForSeconds(0.02f);
+		}
+
+		while (mesh.Obj.transform.localScale.magnitude > 0f)
+		{
+			mesh.Obj.transform.localScale -= new Vector3(0.1f, 0.1f, 0.1f);
+
+			yield return new WaitForSeconds(0.02f);
+		}
+	}
+
+	private IEnumerator ClearEffect(List<int> cleared)
+	{
+		if (cleared.Count == 0) yield break;
+		
+		isPause = true;
+		int idx = 1;
+		
+		foreach (PrefabMesh mesh in gridMeshList)
+		{
+			if (cleared[^idx] == mesh.Pos.Y)
+			{
+				yield return StartCoroutine(ClearMeshEffect(mesh));
+			}
+			else if (mesh.Pos.Y > cleared[^idx])
+			{
+				if (idx == cleared.Count)
+					break;
+
+				++idx;
+			}
+		}
+
+		isPause = false;
+	}
+
 	private void PlaceBlock()
 	{
 		foreach (Coord coord in currentBlock.TilePositions())
@@ -890,7 +936,8 @@ public class GameManager : MonoBehaviour
 			Grid[coord.X, coord.Y, coord.Z] = currentBlock.GetId();
 		}
 
-		Grid.ClearFullRows();
+		List<int> cleared = Grid.ClearFullRows();
+		StartCoroutine(ClearEffect(cleared));
 		RenderGrid();
 
 		if (IsGamerOver())
@@ -948,7 +995,7 @@ public class GameManager : MonoBehaviour
 		foreach (Coord coord in currentBlock.TilePositions())
 		{
 			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[currentBlock.GetId()]);
+			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[currentBlock.GetId()], coord);
 
 			blockMeshList.Add(mesh);
 			mesh.Obj.transform.parent = blockObj.transform;
@@ -970,7 +1017,7 @@ public class GameManager : MonoBehaviour
 		foreach (Coord coord in shadowBlock.TilePositions())
 		{
 			Vector3    offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[0]);
+			PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[0], coord);
 
 			shadowMeshList.Add(mesh);
 			mesh.Obj.transform.parent = shadowObj.transform;
@@ -989,8 +1036,9 @@ public class GameManager : MonoBehaviour
 				{
 					if (Grid[i, j, k] != 0)
 					{
-						Vector3    offset = new(i, -j, k);
-						PrefabMesh mesh   = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1]);
+						Vector3 offset = new(i, -j, k);
+						PrefabMesh mesh = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1],
+						                      new(i, j, k));
 
 						gridMeshList.Add(mesh);
 						mesh.Obj.transform.parent = GridObj.transform;

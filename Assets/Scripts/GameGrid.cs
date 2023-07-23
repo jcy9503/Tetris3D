@@ -5,6 +5,7 @@
  * Contains class related to game grid data.
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameGrid
@@ -118,20 +119,20 @@ public class GameGrid
 		}
 	}
 
-	public int ClearFullRows()
+	public List<int> ClearFullRows()
 	{
-		int cleared = 0;
+		List<int> cleared = new();
 
 		for (int y = SizeY - 1; y >= 0; --y)
 		{
 			if (IsPlaneFull(y))
 			{
 				ClearPlane(y);
-				++cleared;
+				cleared.Add(y);
 			}
-			else if (cleared > 0)
+			else if (cleared.Count > 0)
 			{
-				MovePlaneDown(y, cleared);
+				MovePlaneDown(y, cleared.Count);
 			}
 		}
 
