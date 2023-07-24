@@ -50,7 +50,7 @@ public class Block : IBlock
 			tpTile[i] = tile[i];
 		}
 
-		Block tp = new Block(id, size, tpTile)
+		Block tp = new(id, size, tpTile)
 		{
 			curPos = curPos
 		};

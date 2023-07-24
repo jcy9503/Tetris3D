@@ -135,7 +135,7 @@ public class GameGrid
 				MovePlaneDown(y, cleared.Count);
 			}
 		}
-
+		
 		return cleared;
 	}
 }

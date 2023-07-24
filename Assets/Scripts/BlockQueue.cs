@@ -17,7 +17,7 @@ public class BlockQueue
 	{
 		if (GameManager.TestMode)
 		{
-			return blockCreateFunc.BlockSpawn(3);
+			return blockCreateFunc.BlockSpawn(GameManager.TestBlock);
 		}
 		
 		Random randValue = new();
@@ -45,6 +45,14 @@ public class BlockQueue
 	public Block GetAndUpdateBlock()
 	{
 		Block block = nextBlock;
+
+		if (GameManager.TestMode)
+		{
+			nextBlock = RandomBlock();
+			block.Reset();
+
+			return block;
+		}
 
 		do
 		{

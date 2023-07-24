@@ -57,16 +57,16 @@ public class GameManager : MonoBehaviour
 		shuttingDown = true;
 	}
 
-	private static           bool gameOver;
-	private static           bool isPause;
-	public static            bool TestMode;
-	[SerializeField] private bool testMode;
-
-	private GameObject mainCamera;
-	private Transform  rotatorTr;
-	private Quaternion mementoRotation;
-	private bool       checkDir;
-	private bool       dir;
+	private static           bool       gameOver;
+	private static           bool       isPause;
+	public static            bool       TestMode;
+	[SerializeField] private bool       testMode;
+	public static readonly   int        TestBlock = 3;
+	private                  GameObject mainCamera;
+	private                  Transform  rotatorTr;
+	private                  Quaternion mementoRotation;
+	private                  bool       checkDir;
+	private                  bool       dir;
 	private bool Dir
 	{
 		get => dir;
@@ -77,22 +77,23 @@ public class GameManager : MonoBehaviour
 			dir = value;
 		}
 	}
-	private                  Vector2    clickPos;
-	[SerializeField] private float      initialCameraRotationX    = 15f;
-	[SerializeField] private float      cameraRotationConstraintX = 55f;
-	[SerializeField] private float      cameraSpeed               = 2000f;
-	[SerializeField] private float      cameraShakeAmount         = 0.5f;
-	[SerializeField] private float      cameraShakeTime           = 0.2f;
-	private                  bool       cameraShake;
-	private                  int        viewAngle;
-	[SerializeField] private int[]      gridSize = { 10, 22, 10 };
-	public static            GameGrid   Grid;
-	private                  Vector3    startOffset;
-	private static           BlockQueue BlockQueue { get; set; }
-	private                  Block      currentBlock;
-	private                  Block      shadowBlock;
-	private static readonly  int        alpha = Shader.PropertyToID("_Alpha");
-
+	private                  Vector2          clickPos;
+	[SerializeField] private float            initialCameraRotationX    = 15f;
+	[SerializeField] private float            cameraRotationConstraintX = 55f;
+	[SerializeField] private float            cameraSpeed               = 2000f;
+	[SerializeField] private float            cameraShakeAmount         = 0.5f;
+	[SerializeField] private float            cameraShakeTime           = 0.2f;
+	private                  bool             isCameraShaking;
+	private                  int              viewAngle;
+	[SerializeField] private int[]            gridSize = { 10, 22, 10 };
+	public static            GameGrid         Grid;
+	private                  Vector3          startOffset;
+	private static           BlockQueue       BlockQueue { get; set; }
+	private                  Block            currentBlock;
+	private                  Block            shadowBlock;
+	private static readonly  int              alpha = Shader.PropertyToID("_Alpha");
+	private static readonly  int              clear = Shader.PropertyToID("_Clear");
+	private                  bool             isOnEffect;
 	private                  bool             canSaveBlock;
 	private                  List<PrefabMesh> blockMeshList;
 	private                  List<PrefabMesh> shadowMeshList;
@@ -120,13 +121,12 @@ public class GameManager : MonoBehaviour
 		ESC
 	}
 
-	private delegate IEnumerator LogicFunc();
-
-	private        LogicFunc       logicMethods;
-	private        List<Coroutine> logicList;
-	private static GameObject      blockObj;
-	private static GameObject      shadowObj;
-	public static  GameObject      GridObj;
+	private delegate IEnumerator     LogicFunc();
+	private          LogicFunc       logicMethods;
+	private          List<Coroutine> logicList;
+	private static   GameObject      blockObj;
+	private static   GameObject      shadowObj;
+	public static    GameObject      GridObj;
 
 	private void Awake()
 	{
@@ -145,7 +145,8 @@ public class GameManager : MonoBehaviour
 		Dir                            = false;
 		checkDir                       = false;
 		viewAngle                      = 0;
-		cameraShake                    = false;
+		isCameraShaking                = false;
+		isOnEffect                     = false;
 
 		if (TestMode)
 		{
@@ -206,15 +207,15 @@ public class GameManager : MonoBehaviour
 		{
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
-			#region ScreenControl
+		#region ScreenControl
 
-			if (Input.GetMouseButtonDown(0) && !cameraShake)
+			if (Input.GetMouseButtonDown(0) && !isCameraShaking)
 			{
 				mementoRotation = rotatorTr.rotation;
 				clickPos        = Vector2.zero;
 			}
 
-			if (Input.GetMouseButton(0) && !cameraShake)
+			if (Input.GetMouseButton(0) && !isCameraShaking)
 			{
 				Vector2 angle = new(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"));
 
@@ -248,12 +249,12 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetMouseButtonUp(0) && !cameraShake)
+			if (Input.GetMouseButtonUp(0) && !isCameraShaking)
 			{
 				mementoRotation = rotatorTr.rotation;
 			}
 
-			if (Input.GetKey(KeyCode.UpArrow) && !cameraShake)
+			if (Input.GetKey(KeyCode.UpArrow) && !isCameraShaking)
 			{
 				Quaternion target = rotatorTr.rotation;
 
@@ -268,7 +269,7 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetKey(KeyCode.DownArrow) && !cameraShake)
+			if (Input.GetKey(KeyCode.DownArrow) && !isCameraShaking)
 			{
 				Quaternion target = rotatorTr.rotation;
 
@@ -283,7 +284,7 @@ public class GameManager : MonoBehaviour
 				                                              cameraSpeed * Time.deltaTime);
 			}
 
-			if (Input.GetKey(KeyCode.LeftArrow) && !cameraShake)
+			if (Input.GetKey(KeyCode.LeftArrow) && !isCameraShaking)
 			{
 				Quaternion rotation = rotatorTr.rotation;
 				Quaternion target   = rotation;
@@ -296,7 +297,7 @@ public class GameManager : MonoBehaviour
 				rotatorTr.rotation = rotation;
 			}
 
-			if (Input.GetKey(KeyCode.RightArrow) && !cameraShake)
+			if (Input.GetKey(KeyCode.RightArrow) && !isCameraShaking)
 			{
 				Quaternion rotation = rotatorTr.rotation;
 				Quaternion target   = rotation;
@@ -316,9 +317,9 @@ public class GameManager : MonoBehaviour
 				RefreshCurrentBlock();
 			}
 
-			#endregion
+		#endregion
 
-			#region BlockControl
+		#region BlockControl
 
 			if (Input.GetKey(KeyCode.A) && !keyUsing[(int)KEY_VALUE.LEFT])
 			{
@@ -405,9 +406,9 @@ public class GameManager : MonoBehaviour
 				StartCoroutine(KeyRewind((int)KEY_VALUE.LEFT_ALT));
 			}
 
-			#endregion
+		#endregion
 
-			#region GameManagement
+		#region GameManagement
 
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
@@ -417,7 +418,7 @@ public class GameManager : MonoBehaviour
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
 			}
 
-			#endregion
+		#endregion
 
 #elif UNITY_ANDROID
 		#region ScreenControl
@@ -441,7 +442,7 @@ public class GameManager : MonoBehaviour
 
 #endif
 
-			#region Effect
+		#region Effect
 
 			if (shadowMeshList.Count > 0)
 			{
@@ -451,7 +452,7 @@ public class GameManager : MonoBehaviour
 				}
 			}
 
-			#endregion
+		#endregion
 		}
 
 		else if (isPause)
@@ -530,7 +531,7 @@ public class GameManager : MonoBehaviour
 
 	private IEnumerator CameraShake()
 	{
-		cameraShake = true;
+		isCameraShaking = true;
 
 		yield return StartCoroutine(RotatorShake());
 
@@ -554,7 +555,7 @@ public class GameManager : MonoBehaviour
 	{
 		rotatorTr.position = Vector3.zero;
 
-		cameraShake = false;
+		isCameraShaking = false;
 	}
 
 	private void Terminate()
@@ -892,7 +893,7 @@ public class GameManager : MonoBehaviour
 		}
 
 		currentBlock.Move(Coord.Up);
-		StartCoroutine(PlaceBlock());
+		PlaceBlock();
 	}
 
 	private void MoveBlockDownWhole()
@@ -909,7 +910,7 @@ public class GameManager : MonoBehaviour
 			StartCoroutine(CameraShake());
 
 		currentBlock.Move(Coord.Up);
-		StartCoroutine(PlaceBlock());
+		PlaceBlock();
 	}
 
 	private static bool IsGamerOver()
@@ -917,51 +918,7 @@ public class GameManager : MonoBehaviour
 		return !(Grid.IsPlaneEmpty(-1) && Grid.IsPlaneEmpty(0));
 	}
 
-	private IEnumerator ClearMeshEffect(int start, int end)
-	{
-		while (gridMeshList[end].Obj.transform.localScale.magnitude < 3f)
-		{
-			float alphaSet = 1.0f;
-			for (int i = start; i < end; ++i)
-			{
-				gridMeshList[i].Obj.transform.localScale += new Vector3(0.1f, 0.1f, 0.1f);
-				gridMeshList[i].Renderer.sharedMaterial.SetFloat(alpha, alphaSet);
-
-				yield return new WaitForSeconds(0.05f);
-
-				alphaSet -= 0.05f;
-			}
-		}
-	}
-
-	private IEnumerator ClearEffect(List<int> cleared)
-	{
-		if (cleared.Count == 0) yield break;
-
-		isPause = true;
-
-		int idx   = 1;
-		int start = -1;
-
-		for (int i = 0; i < gridMeshList.Count; ++i)
-		{
-			if (start == -1 && cleared[^idx] == gridMeshList[i].Pos.Y)
-			{
-				start = i;
-			}
-			else if (start != -1 && gridMeshList[i].Pos.Y > cleared[^idx])
-			{
-				yield return StartCoroutine(ClearMeshEffect(start, i));
-
-				start = -1;
-				++idx;
-			}
-		}
-
-		isPause = false;
-	}
-
-	private IEnumerator PlaceBlock()
+	private void PlaceBlock()
 	{
 		foreach (Coord coord in currentBlock.TilePositions())
 		{
@@ -969,10 +926,10 @@ public class GameManager : MonoBehaviour
 		}
 
 		List<int> cleared = Grid.ClearFullRows();
-
-		yield return StartCoroutine(ClearEffect(cleared));
-
+		
 		RenderGrid();
+
+		cleared.Clear();
 
 		if (IsGamerOver())
 		{
@@ -1014,6 +971,8 @@ public class GameManager : MonoBehaviour
 
 	private void ClearGrid()
 	{
+		if (isOnEffect) return;
+
 		foreach (PrefabMesh mesh in gridMeshList)
 		{
 			Destroy(mesh.Obj);
@@ -1074,7 +1033,7 @@ public class GameManager : MonoBehaviour
 					{
 						Vector3 offset = new(j, -i, k);
 						PrefabMesh mesh = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1],
-						                      new(j, i, k), ShadowCastingMode.On);
+						                      new Coord(j, i, k), ShadowCastingMode.On);
 
 						gridMeshList.Add(mesh);
 						mesh.Obj.transform.parent = GridObj.transform;

@@ -32,10 +32,10 @@ public class Coord
 	}
 
 	public static Coord operator +(Coord param) => param;
-	public static Coord operator -(Coord param) => new Coord(-param.X, -param.Y, -param.Z);
+	public static Coord operator -(Coord param) => new(-param.X, -param.Y, -param.Z);
 
 	public static Coord operator +(Coord param1, Coord param2)
-		=> new Coord(param1.X + param2.X, param1.Y + param2.Y, param1.Z + param2.Z);
+		=> new(param1.X + param2.X, param1.Y + param2.Y, param1.Z + param2.Z);
 
 	public static Coord operator -(Coord param1, Coord param2)
 		=> param1 + (-param2);
