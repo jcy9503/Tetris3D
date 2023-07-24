@@ -58,9 +58,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Alpha: 1
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _BumpScale: 1
+    - _Clear: 0
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
