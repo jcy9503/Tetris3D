@@ -430,7 +430,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77ad3d34878656143b6261f829d5330b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testMode: 1
+  testMode: 0
   initialCameraRotationX: 15
   cameraRotationConstraintX: 55
   cameraSpeed: 2000
