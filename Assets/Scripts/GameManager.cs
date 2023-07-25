@@ -1127,7 +1127,7 @@ public class GameManager : MonoBehaviour
 	private IEnumerator ClearEffect(List<int> cleared)
 	{
 		List<PrefabMesh> clearMeshList   = new();
-		const float      explosionForce  = 800f;
+		const float      explosionForce  = 900f;
 		float            explosionRadius = Grid.SizeX + Grid.SizeZ;
 		const float      explosionUp     = 5f;
 		const float      torque          = 100f;
@@ -1146,6 +1146,7 @@ public class GameManager : MonoBehaviour
 
 					Rigidbody rb = mesh.Obj.AddComponent<Rigidbody>();
 
+					rb.AddForce(Physics.gravity * 60f, ForceMode.Acceleration);
 					rb.AddForce(new Vector3(0f, Random.Range(-explosionUp, explosionUp), 0f),
 					            ForceMode.Impulse);
 					rb.AddExplosionForce(explosionForce,
@@ -1166,7 +1167,7 @@ public class GameManager : MonoBehaviour
 
 		while (alphaSet > 0)
 		{
-			alphaSet -= 0.03f;
+			alphaSet -= 0.02f;
 
 			foreach (PrefabMesh mesh in clearMeshList)
 			{
