@@ -59,9 +59,11 @@ public class GameManager : MonoBehaviour
 
 	private static           bool       gameOver;
 	private static           bool       isPause;
+	private const            int        baseScore = 100;
+	public static            int        Score;
 	public static            bool       TestMode;
 	[SerializeField] private bool       testMode;
-	public static readonly   int        TestBlock = 3;
+	public const             int        TestBlock = 3;
 	private                  GameObject mainCamera;
 	private                  Transform  rotatorTr;
 	private                  Quaternion mementoRotation;
@@ -93,6 +95,7 @@ public class GameManager : MonoBehaviour
 	private                  Block            shadowBlock;
 	private static readonly  int              alpha = Shader.PropertyToID("_Alpha");
 	private static readonly  int              clear = Shader.PropertyToID("_Clear");
+	private static readonly  int              color = Shader.PropertyToID("_Color");
 	private                  bool             isOnEffect;
 	private                  bool             canSaveBlock;
 	private                  List<PrefabMesh> blockMeshList;
@@ -103,6 +106,8 @@ public class GameManager : MonoBehaviour
 	private                  List<bool>       keyUsing;
 	private                  List<float>      keyIntervals;
 	private const            float            defaultKeyInterval = 0.2f;
+	private                  ParticleRender   particle;
+	private const            string           vfxRotation = "Prefabs/VFX_Rotation";
 
 	private enum KEY_VALUE
 	{
@@ -127,6 +132,7 @@ public class GameManager : MonoBehaviour
 	private static   GameObject      blockObj;
 	private static   GameObject      shadowObj;
 	public static    GameObject      GridObj;
+	private static   GameObject      effectObj;
 
 	private void Awake()
 	{
@@ -137,6 +143,7 @@ public class GameManager : MonoBehaviour
 		GridObj   = GameObject.Find("Grid");
 		blockObj  = GameObject.Find("Blocks");
 		shadowObj = GameObject.Find("Shadow");
+		effectObj = GameObject.Find("Effect");
 
 		mainCamera                     = GameObject.Find("Main Camera");
 		mainCamera!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
@@ -195,6 +202,8 @@ public class GameManager : MonoBehaviour
 			StartCoroutine(logicMethods()),
 			StartCoroutine(AngleCalculate()),
 		};
+
+		particle = null;
 	}
 
 	private void Update()
@@ -500,6 +509,9 @@ public class GameManager : MonoBehaviour
 
 			MoveBlockDown();
 
+			if (particle != null)
+				particle.Obj.transform.position -= Vector3.up;
+
 			yield return new WaitForSeconds(downInterval);
 		}
 	}
@@ -625,6 +637,45 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+
+			Quaternion rotation;
+
+			switch (viewAngle)
+			{
+				case 0:
+					rotation                      = Quaternion.Euler(0f, 0f, 90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 1:
+					rotation                      = Quaternion.Euler(90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 2:
+					rotation                      = Quaternion.Euler(0f, 0f, -90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 3:
+					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -681,6 +732,45 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+
+			Quaternion rotation;
+
+			switch (viewAngle)
+			{
+				case 0:
+					rotation                      = Quaternion.Euler(0f, 0f, -90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 1:
+					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 2:
+					rotation                      = Quaternion.Euler(0f, 0f, 90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 3:
+					rotation                      = Quaternion.Euler(90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -695,6 +785,25 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+			Quaternion rotation = Quaternion.Euler(0f, 0f, 180f);
+
+			switch (viewAngle)
+			{
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -709,6 +818,25 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+			Quaternion rotation = Quaternion.identity;
+
+			switch (viewAngle)
+			{
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -765,6 +893,45 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+
+			Quaternion rotation;
+
+			switch (viewAngle)
+			{
+				case 0:
+					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 1:
+					rotation                      = Quaternion.Euler(0f, 0f, 90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 2:
+					rotation                      = Quaternion.Euler(90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 3:
+					rotation                      = Quaternion.Euler(0f, 0f, -90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -821,6 +988,45 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
+			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
+
+			Quaternion rotation;
+
+			switch (viewAngle)
+			{
+				case 0:
+					rotation                      = Quaternion.Euler(90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 1:
+					rotation                      = Quaternion.Euler(0f, 0f, -90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 2:
+					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+
+				case 3:
+					rotation                      = Quaternion.Euler(0f, 0f, 90f);
+					particle                      = new ParticleRender(vfxRotation, offset, rotation);
+					particle.Obj.transform.parent = effectObj.transform;
+
+					break;
+			}
+
+			Destroy(particle!.Obj, 0.3f);
+			particle = null;
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -918,6 +1124,65 @@ public class GameManager : MonoBehaviour
 		return !(Grid.IsPlaneEmpty(-1) && Grid.IsPlaneEmpty(0));
 	}
 
+	private IEnumerator ClearEffect(List<int> cleared)
+	{
+		List<PrefabMesh> clearMeshList   = new();
+		const float      explosionForce  = 800f;
+		float            explosionRadius = Grid.SizeX + Grid.SizeZ;
+		const float      explosionUp     = 5f;
+		const float      torque          = 100f;
+
+		foreach (int height in cleared)
+		{
+			for (int i = 0; i < Grid.SizeX; ++i)
+			{
+				for (int j = 0; j < Grid.SizeZ; ++j)
+				{
+					Vector3 offset = new(i, -height, j);
+					PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset, Block.MatPath[^1],
+					                      new Coord(i, height, j), ShadowCastingMode.Off);
+					mesh.Renderer.material.SetFloat(clear, 1f);
+					mesh.Renderer.material.SetFloat(color, Random.Range(0f, 1f));
+
+					Rigidbody rb = mesh.Obj.AddComponent<Rigidbody>();
+
+					rb.AddForce(new Vector3(0f, Random.Range(-explosionUp, explosionUp), 0f),
+					            ForceMode.Impulse);
+					rb.AddExplosionForce(explosionForce,
+					                     new Vector3(0f, startOffset.y - height, 0f),
+					                     explosionRadius);
+
+					Vector3 rdVec = new(Random.Range(-torque, torque), Random.Range(-torque, torque),
+					                    Random.Range(-torque, torque));
+					rb.AddTorque(rdVec);
+
+					clearMeshList.Add(mesh);
+					mesh.Obj.transform.parent = effectObj.transform;
+				}
+			}
+		}
+
+		float alphaSet = 1.0f;
+
+		while (alphaSet > 0)
+		{
+			alphaSet -= 0.03f;
+
+			foreach (PrefabMesh mesh in clearMeshList)
+			{
+				mesh.Obj.transform.localScale *= 1.02f;
+				mesh.Renderer.material.SetFloat(alpha, alphaSet);
+			}
+
+			yield return new WaitForSeconds(0.02f);
+		}
+
+		foreach (PrefabMesh mesh in clearMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+	}
+
 	private void PlaceBlock()
 	{
 		foreach (Coord coord in currentBlock.TilePositions())
@@ -926,7 +1191,9 @@ public class GameManager : MonoBehaviour
 		}
 
 		List<int> cleared = Grid.ClearFullRows();
-		
+
+		StartCoroutine(ClearEffect(cleared));
+
 		RenderGrid();
 
 		cleared.Clear();
@@ -988,7 +1255,7 @@ public class GameManager : MonoBehaviour
 		foreach (Coord coord in currentBlock.TilePositions())
 		{
 			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh = new("Prefabs/Block", startOffset + offset,
+			PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset,
 			                      Block.MatPath[currentBlock.GetId()], coord, ShadowCastingMode.On);
 
 			blockMeshList.Add(mesh);
@@ -1011,7 +1278,7 @@ public class GameManager : MonoBehaviour
 		foreach (Coord coord in shadowBlock.TilePositions())
 		{
 			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
-			PrefabMesh mesh = new("Prefabs/Block", startOffset + offset,
+			PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset,
 			                      Block.MatPath[0], coord, ShadowCastingMode.Off);
 
 			shadowMeshList.Add(mesh);
@@ -1032,7 +1299,7 @@ public class GameManager : MonoBehaviour
 					if (Grid[j, i, k] != 0)
 					{
 						Vector3 offset = new(j, -i, k);
-						PrefabMesh mesh = new("Prefabs/Block", startOffset + offset, Block.MatPath[^1],
+						PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset, Block.MatPath[^1],
 						                      new Coord(j, i, k), ShadowCastingMode.On);
 
 						gridMeshList.Add(mesh);

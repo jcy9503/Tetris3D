@@ -6,6 +6,8 @@
  * Contains Block interface.
  */
 
+using UnityEngine;
+
 public class Coord
 {
 	public int X { get; set; }
@@ -29,6 +31,13 @@ public class Coord
 	public override string ToString()
 	{
 		return "X: " + X + " Y: " + Y + " Z: " + Z;
+	}
+
+	public Vector3 ToVector()
+	{
+		Vector3 vector = new(X, -Y, Z);
+
+		return vector;
 	}
 
 	public static Coord operator +(Coord param) => param;

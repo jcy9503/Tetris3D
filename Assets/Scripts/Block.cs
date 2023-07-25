@@ -5,21 +5,21 @@
  * Contains basic Block class.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using Random = System.Random;
 
 public class Block : IBlock
 {
 	private readonly int     id;
-	private readonly int     size;
-	private          Coord   curPos;
+	public readonly  int     Size;
+	public           Coord   Pos;
 	private readonly Coord[] tile;
 
 	protected Block(int id, int size, Coord[] tile)
 	{
 		this.id   = id;
-		this.size = size;
+		this.Size = size;
 		this.tile = tile;
 	}
 
@@ -30,8 +30,8 @@ public class Block : IBlock
 		Random randValue  = new();
 		Coord  randRotate = new(randValue.Next(0, 4), randValue.Next(0, 4), randValue.Next(0, 4));
 
-		curPos = new Coord(randValue.Next(0, GameManager.Grid.SizeX - size), 0,
-		                   randValue.Next(0, GameManager.Grid.SizeZ - size));
+		Pos = new Coord(randValue.Next(0, GameManager.Grid.SizeX - Size), 0,
+		                randValue.Next(0, GameManager.Grid.SizeZ - Size));
 
 		for (int i = 0; i < randRotate.X; ++i)
 			RotateXClockWise();
@@ -50,9 +50,9 @@ public class Block : IBlock
 			tpTile[i] = tile[i];
 		}
 
-		Block tp = new(id, size, tpTile)
+		Block tp = new(id, Size, tpTile)
 		{
-			curPos = curPos
+			Pos = Pos
 		};
 
 		return tp;
@@ -60,12 +60,12 @@ public class Block : IBlock
 
 	public void Move(Coord move)
 	{
-		curPos += move;
+		Pos += move;
 	}
 
 	public IEnumerable<Coord> TilePositions()
 	{
-		return tile.Select(pos => new Coord(pos + curPos));
+		return tile.Select(pos => new Coord(pos + Pos));
 	}
 
 	public void RotateXClockWise()
@@ -73,7 +73,7 @@ public class Block : IBlock
 		foreach (Coord coord in tile)
 		{
 			Coord tp = new(coord);
-			coord.Y = size - 1 - tp.Z;
+			coord.Y = Size - 1 - tp.Z;
 			coord.Z = tp.Y;
 		}
 	}
@@ -84,7 +84,7 @@ public class Block : IBlock
 		{
 			Coord tp = new(coord);
 			coord.Y = tp.Z;
-			coord.Z = size - 1 - tp.Y;
+			coord.Z = Size - 1 - tp.Y;
 		}
 	}
 
@@ -93,7 +93,7 @@ public class Block : IBlock
 		foreach (Coord coord in tile)
 		{
 			Coord tp = new(coord);
-			coord.X = size - 1 - tp.Z;
+			coord.X = Size - 1 - tp.Z;
 			coord.Z = tp.X;
 		}
 	}
@@ -104,7 +104,7 @@ public class Block : IBlock
 		{
 			Coord tp = new(coord);
 			coord.X = tp.Z;
-			coord.Z = size - 1 - tp.X;
+			coord.Z = Size - 1 - tp.X;
 		}
 	}
 
@@ -113,7 +113,7 @@ public class Block : IBlock
 		foreach (Coord coord in tile)
 		{
 			Coord tp = new(coord);
-			coord.X = size - 1 - tp.Y;
+			coord.X = Size - 1 - tp.Y;
 			coord.Y = tp.X;
 		}
 	}
@@ -124,10 +124,10 @@ public class Block : IBlock
 		{
 			Coord tp = new(coord);
 			coord.X = tp.Y;
-			coord.Y = size - 1 - tp.X;
+			coord.Y = Size - 1 - tp.X;
 		}
 	}
-	
+
 	public static readonly string[] MatPath =
 	{
 		"Materials/BlockShadow",

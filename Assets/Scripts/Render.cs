@@ -216,3 +216,16 @@ public class PrefabMesh
 		Pos                        = coord;
 	}
 }
+
+/// <summary>
+/// particle rendering class
+/// </summary>
+public class ParticleRender
+{
+	public GameObject Obj { get; set; }
+
+	public ParticleRender(string meshPath, Vector3 pos, Quaternion rotation)
+	{
+		Obj = Object.Instantiate(Resources.Load<GameObject>(meshPath), pos, rotation);
+	}
+}
