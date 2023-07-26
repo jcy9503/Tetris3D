@@ -15,7 +15,7 @@ public class BlockQueue
 
 	private static Block RandomBlock()
 	{
-		if (GameManager.TestMode)
+		if (GameManager.TestModeBlock)
 		{
 			return blockCreateFunc.BlockSpawn(GameManager.TestBlock);
 		}
@@ -46,7 +46,7 @@ public class BlockQueue
 	{
 		Block block = nextBlock;
 
-		if (GameManager.TestMode)
+		if (GameManager.TestModeBlock)
 		{
 			nextBlock = RandomBlock();
 			block.Reset();

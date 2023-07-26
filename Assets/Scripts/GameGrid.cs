@@ -10,7 +10,7 @@ using UnityEngine;
 
 public class GameGrid
 {
-	private CubeMesh mesh;
+	public  CubeMesh Mesh { get; private set; }
 	private int[,,]  grid;
 	private float    unit;
 	public  int      SizeX { get; private set; }
@@ -51,9 +51,23 @@ public class GameGrid
 			}
 		}
 
-		mesh = new CubeMesh("GridMesh", SizeX, SizeY, SizeZ, unit, true, 
+		if (GameManager.TestGrid)
+		{
+			for (int i = SizeY - 1; i <= SizeY; ++i)
+			{
+				for (int j = 1; j <= SizeX; ++j)
+				{
+					for (int k = 1; k <= SizeZ; ++k)
+						grid[j, i, k] = 1;
+				}
+
+				grid[SizeX, i, SizeZ] = 0;
+			}
+		}
+
+		Mesh = new CubeMesh("GridMesh", SizeX, SizeY, SizeZ, unit, true,
 		                    "Materials/Grid", false, null);
-		mesh.Obj.transform.parent = GameManager.GridObj.transform;
+		Mesh.Obj.transform.parent = GameManager.GridObj.transform;
 	}
 
 	private void SetGrid(int x, int y, int z, float gridUnit)
@@ -135,7 +149,7 @@ public class GameGrid
 				MovePlaneDown(y, cleared.Count);
 			}
 		}
-		
+
 		return cleared;
 	}
 }

@@ -15,7 +15,7 @@ public class CubeMesh
 {
 	public  GameObject   Obj       { get; private set; }
 	private MeshFilter   MFilter   { get; set; }
-	private MeshRenderer MRenderer { get; set; }
+	public  MeshRenderer MRenderer { get; private set; }
 	private Vector3[]    Vertices  { get; set; }
 	private Vector2[]    UVs       { get; set; }
 	private int[]        Triangles { get; set; }
