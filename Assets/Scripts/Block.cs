@@ -12,6 +12,7 @@ using Random = System.Random;
 public class Block : IBlock
 {
 	private readonly int     id;
+	public const     int     Type = 7;
 	public readonly  int     Size;
 	public           Coord   Pos;
 	private readonly Coord[] tile;
