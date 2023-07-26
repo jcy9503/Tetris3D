@@ -1,30 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7202525923425771183
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccf1aba9553839d41ae37dd52e9ebcce, type: 3}
-  m_Name: MotionBlur
-  m_EditorClassIdentifier: 
-  active: 1
-  mode:
-    m_OverrideState: 0
-    m_Value: 0
-  quality:
-    m_OverrideState: 1
-    m_Value: 2
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.291
-  clamp:
-    m_OverrideState: 1
-    m_Value: 0.0283
 --- !u!114 &-1609831733089940417
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -56,7 +31,6 @@ MonoBehaviour:
   components:
   - {fileID: 1704286846773252546}
   - {fileID: 3975581981169149242}
-  - {fileID: -7202525923425771183}
   - {fileID: -1609831733089940417}
   - {fileID: 6112228980097004816}
   - {fileID: 6930303075700773143}
@@ -75,10 +49,10 @@ MonoBehaviour:
   active: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 1.15
+    m_Value: 1.32
   intensity:
     m_OverrideState: 1
-    m_Value: 1.5
+    m_Value: 1.1
   scatter:
     m_OverrideState: 1
     m_Value: 0.9
@@ -122,10 +96,10 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.457
+    m_Value: 0.5
   smoothness:
     m_OverrideState: 1
-    m_Value: 0.053
+    m_Value: 0.166
   rounded:
     m_OverrideState: 0
     m_Value: 0
@@ -147,10 +121,10 @@ MonoBehaviour:
     m_Value: {x: 1, y: 1, z: 1, w: 0.038498558}
   gamma:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0.8214462}
+    m_Value: {x: 1, y: 1, z: 1, w: 1}
   gain:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 0.065420784}
+    m_Value: {x: 1, y: 1, z: 1, w: 0.3234501}
 --- !u!114 &6930303075700773143
 MonoBehaviour:
   m_ObjectHideFlags: 3

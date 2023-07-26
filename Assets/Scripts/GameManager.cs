@@ -15,6 +15,8 @@ using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
 {
+#region Singleton
+
 	private static readonly object      locker = new();
 	private static          bool        shuttingDown;
 	private static          GameManager instance;
@@ -57,12 +59,20 @@ public class GameManager : MonoBehaviour
 		shuttingDown = true;
 	}
 
+#endregion
+
+#region Variables
+
 	[Header("Test Mode")] private static bool       gameOver;
 	private static                       bool       isPause;
 	private const                        int        baseScore = 100;
 	public static                        int        Score;
 	public static                        bool       TestGrid;
 	[SerializeField] private             bool       testGrid;
+	public static                        int        TestHeight;
+	[SerializeField] private             int        testHeight = 4;
+	public static                        bool       Regeneration;
+	[SerializeField] private             bool       regeneration;
 	[SerializeField] private             int        testFieldSize = 6;
 	public static                        bool       TestModeBlock;
 	[SerializeField] private             bool       testModeBlock;
@@ -84,26 +94,32 @@ public class GameManager : MonoBehaviour
 		}
 	}
 	private Vector2 clickPos;
+
 	[Space(20)] [Header("Camera Control")] [SerializeField]
 	private float initialCameraRotationX = 15f;
+
 	[SerializeField] private float cameraRotationConstraintX = 55f;
 	[SerializeField] private float cameraSpeed               = 2000f;
 	[SerializeField] private float cameraShakeAmount         = 0.5f;
 	[SerializeField] private float cameraShakeTime           = 0.2f;
 	private                  bool  isCameraShaking;
 	private                  int   viewAngle;
+
 	[Space(20)] [Header("Grid/Block")] [SerializeField]
 	private int[] gridSize = { 10, 22, 10 };
+
 	public static            GameGrid         Grid;
 	private                  Vector3          startOffset;
 	private static           BlockQueue       BlockQueue { get; set; }
 	private                  Block            currentBlock;
 	private                  Block            shadowBlock;
-	private static readonly  int              alpha    = Shader.PropertyToID("_Alpha");
-	private static readonly  int              clear    = Shader.PropertyToID("_Clear");
-	private static readonly  int              color    = Shader.PropertyToID("_Color");
-	private static readonly  int              emission = Shader.PropertyToID("_Emission");
-	private static readonly  int              over     = Shader.PropertyToID("_GameOver");
+	private static readonly  int              alpha        = Shader.PropertyToID("_Alpha");
+	private static readonly  int              clear        = Shader.PropertyToID("_Clear");
+	private static readonly  int              color        = Shader.PropertyToID("_Color");
+	private static readonly  int              emission     = Shader.PropertyToID("_Emission");
+	private static readonly  int              over         = Shader.PropertyToID("_GameOver");
+	private static readonly  int              smoothness   = Shader.PropertyToID("_Smoothness");
+	private static readonly  int              sortingOrder = Shader.PropertyToID("_QueueOffset");
 	private                  bool             canSaveBlock;
 	private                  List<PrefabMesh> blockMeshList;
 	private                  List<PrefabMesh> shadowMeshList;
@@ -135,14 +151,18 @@ public class GameManager : MonoBehaviour
 		ESC
 	}
 
-	private delegate        IEnumerator     LogicFunc();
-	private                 LogicFunc       logicMethods;
-	private                 List<Coroutine> logicList;
-	private static          GameObject      blockObj;
-	private static          GameObject      shadowObj;
-	public static           GameObject      GridObj;
-	private static          GameObject      effectObj;
-	private static readonly int             smoothness = Shader.PropertyToID("_Smoothness");
+	private delegate IEnumerator LogicFunc();
+
+	private        LogicFunc       logicMethods;
+	private        List<Coroutine> logicList;
+	private static GameObject      blockObj;
+	private static GameObject      shadowObj;
+	public static  GameObject      GridObj;
+	private static GameObject      effectObj;
+
+#endregion
+
+#region MonoFunction
 
 	private void Awake()
 	{
@@ -151,6 +171,8 @@ public class GameManager : MonoBehaviour
 		Score    = 0;
 
 		TestGrid      = testGrid;
+		TestHeight    = testHeight;
+		Regeneration  = regeneration;
 		TestModeBlock = testModeBlock;
 		TestBlock     = testBlock % Block.Type;
 
@@ -468,21 +490,6 @@ public class GameManager : MonoBehaviour
 		#endregion
 
 #endif
-
-		#region Effect
-
-			if (shadowMeshList.Count > 0)
-			{
-				foreach (PrefabMesh mesh in shadowMeshList)
-				{
-					mesh.Renderer.sharedMaterial.SetFloat(alpha, Mathf.PingPong(Time.time, 0.35f) + 0.15f);
-				}
-			}
-
-			renderTopCloud.material.SetFloat(color, Mathf.PingPong(Time.time * 0.1f, 1f));
-			renderBottomCloud.material.SetFloat(color, Mathf.PingPong(Time.time * 0.1f, 1f));
-
-		#endregion
 		}
 
 		else if (isPause)
@@ -499,7 +506,29 @@ public class GameManager : MonoBehaviour
 
 #endif
 		}
+
+	#region Effect
+
+		if (shadowMeshList.Count > 0)
+		{
+			foreach (PrefabMesh mesh in shadowMeshList)
+			{
+				mesh.Renderer.material.SetFloat(alpha, Mathf.PingPong(Time.time, 0.7f) + 0.15f);
+			}
+		}
+
+		float col = Mathf.PingPong(Time.time * 0.1f, 2f);
+
+		renderTopCloud.material.SetFloat(color, col);
+		renderBottomCloud.material.SetFloat(color, col);
+		Grid.Mesh.MRenderer.material.SetFloat(color, col);
+
+	#endregion
 	}
+
+#endregion
+
+#region GameControl
 
 	private void GamePause()
 	{
@@ -543,6 +572,60 @@ public class GameManager : MonoBehaviour
 
 		keyUsing[id] = false;
 	}
+
+	private void Terminate()
+	{
+		foreach (Coroutine coroutine in logicList)
+		{
+			StopCoroutine(coroutine);
+		}
+
+		gameOver = false;
+	}
+
+	private static bool BlockFits(Block block)
+	{
+		return block.TilePositions().All(coord => Grid.IsEmpty(coord.X, coord.Y, coord.Z));
+	}
+
+	private static bool IsGameOver()
+	{
+		return !Grid.IsPlaneEmpty(0);
+	}
+
+	private void PlaceBlock()
+	{
+		foreach (Coord coord in currentBlock.TilePositions())
+		{
+			Grid[coord.X, coord.Y, coord.Z] = currentBlock.GetId();
+		}
+
+		List<int> cleared = Grid.ClearFullRows();
+
+		StartCoroutine(ClearEffect(cleared));
+
+		RenderGrid();
+
+		cleared.Clear();
+
+		if (IsGameOver())
+		{
+			isPause  = true;
+			gameOver = true;
+
+			StartCoroutine(GameOverEffect());
+		}
+		else
+		{
+			canSaveBlock = true;
+			currentBlock = BlockQueue.GetAndUpdateBlock();
+			RefreshCurrentBlock();
+		}
+	}
+
+#endregion
+
+#region CameraControl
 
 	private IEnumerator AngleCalculate()
 	{
@@ -591,20 +674,9 @@ public class GameManager : MonoBehaviour
 		isCameraShaking = false;
 	}
 
-	private void Terminate()
-	{
-		foreach (Coroutine coroutine in logicList)
-		{
-			StopCoroutine(coroutine);
-		}
+#endregion
 
-		gameOver = false;
-	}
-
-	private static bool BlockFits(Block block)
-	{
-		return block.TilePositions().All(coord => Grid.IsEmpty(coord.X, coord.Y, coord.Z));
-	}
+#region BlockControl
 
 	private void RotateBlockXClockWise()
 	{
@@ -1140,12 +1212,11 @@ public class GameManager : MonoBehaviour
 		PlaceBlock();
 	}
 
-	private static bool IsGameOver()
-	{
-		return !Grid.IsPlaneEmpty(0);
-	}
+#endregion
 
-	private IEnumerator GridEffect()
+#region Effect
+
+	private static IEnumerator GridEffect()
 	{
 		const float alphaUnit = 0.01f;
 		float       alphaSet  = Grid.Mesh.MRenderer.material.GetFloat(alpha) + alphaUnit;
@@ -1278,71 +1349,9 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-	private void PlaceBlock()
-	{
-		foreach (Coord coord in currentBlock.TilePositions())
-		{
-			Grid[coord.X, coord.Y, coord.Z] = currentBlock.GetId();
-		}
+#endregion
 
-		List<int> cleared = Grid.ClearFullRows();
-
-		StartCoroutine(ClearEffect(cleared));
-
-		RenderGrid();
-
-		cleared.Clear();
-
-		if (IsGameOver())
-		{
-			isPause  = true;
-			gameOver = true;
-
-			StartCoroutine(GameOverEffect());
-		}
-		else
-		{
-			canSaveBlock = true;
-			currentBlock = BlockQueue.GetAndUpdateBlock();
-			RefreshCurrentBlock();
-		}
-	}
-
-	private void RefreshCurrentBlock()
-	{
-		RenderCurrentBlock();
-		RenderShadowBlock();
-	}
-
-	private void ClearCurrentBlock()
-	{
-		foreach (PrefabMesh mesh in blockMeshList)
-		{
-			Destroy(mesh.Obj);
-		}
-
-		blockMeshList.Clear();
-	}
-
-	private void ClearShadowBlock()
-	{
-		foreach (PrefabMesh mesh in shadowMeshList)
-		{
-			Destroy(mesh.Obj);
-		}
-
-		shadowMeshList.Clear();
-	}
-
-	private void ClearGrid()
-	{
-		foreach (PrefabMesh mesh in gridMeshList)
-		{
-			Destroy(mesh.Obj);
-		}
-
-		gridMeshList.Clear();
-	}
+#region Render
 
 	private void RenderCurrentBlock()
 	{
@@ -1405,6 +1414,46 @@ public class GameManager : MonoBehaviour
 			}
 		}
 	}
-	
-	
+
+	private void RefreshCurrentBlock()
+	{
+		RenderCurrentBlock();
+		RenderShadowBlock();
+	}
+
+	private void ClearCurrentBlock()
+	{
+		foreach (PrefabMesh mesh in blockMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+
+		blockMeshList.Clear();
+	}
+
+	private void ClearShadowBlock()
+	{
+		foreach (PrefabMesh mesh in shadowMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+
+		shadowMeshList.Clear();
+	}
+
+	private void ClearGrid()
+	{
+		foreach (PrefabMesh mesh in gridMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
+
+		gridMeshList.Clear();
+	}
+
+#endregion
+
+#region UI
+
+#endregion
 }

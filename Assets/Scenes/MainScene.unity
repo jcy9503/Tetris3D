@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1852970914}
-  m_IndirectSpecularColor: {r: 0.009889097, g: 0.009169393, b: 0.008708344, a: 1}
+  m_IndirectSpecularColor: {r: 0.009889063, g: 0.0091693485, b: 0.008708292, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -4491,7 +4491,6 @@ GameObject:
   - component: {fileID: 1053257310}
   - component: {fileID: 1053257309}
   - component: {fileID: 1053257308}
-  - component: {fileID: 1053257307}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -4499,18 +4498,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1053257307
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1053257306}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56b8c6984f7bdbf4480408f730da5c47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1053257308
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5821,7 +5808,6 @@ GameObject:
   - component: {fileID: 1191925076}
   - component: {fileID: 1191925079}
   - component: {fileID: 1191925078}
-  - component: {fileID: 1191925077}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -5849,18 +5835,6 @@ RectTransform:
   m_AnchoredPosition: {x: -90, y: 600}
   m_SizeDelta: {x: 530, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1191925077
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1191925075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 388c24ade600cae409ccca343eeaf14c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1191925078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7508,7 +7482,6 @@ GameObject:
   - component: {fileID: 1478172589}
   - component: {fileID: 1478172592}
   - component: {fileID: 1478172591}
-  - component: {fileID: 1478172590}
   m_Layer: 5
   m_Name: Title
   m_TagString: Untagged
@@ -7536,18 +7509,6 @@ RectTransform:
   m_AnchoredPosition: {x: -90, y: 600}
   m_SizeDelta: {x: 530, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1478172590
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1478172588}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 388c24ade600cae409ccca343eeaf14c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1478172591
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9106,6 +9067,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   testGrid: 0
+  testHeight: 4
+  regeneration: 0
   testFieldSize: 4
   testModeBlock: 0
   testBlock: 3

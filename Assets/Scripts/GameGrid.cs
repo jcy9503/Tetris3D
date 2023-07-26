@@ -53,7 +53,7 @@ public class GameGrid
 
 		if (GameManager.TestGrid)
 		{
-			for (int i = SizeY - 1; i <= SizeY; ++i)
+			for (int i = SizeY - GameManager.TestHeight + 1; i <= SizeY; ++i)
 			{
 				for (int j = 1; j <= SizeX; ++j)
 				{
@@ -147,6 +147,20 @@ public class GameGrid
 			else if (cleared.Count > 0)
 			{
 				MovePlaneDown(y, cleared.Count);
+			}
+		}
+		
+		if (GameManager.TestGrid && GameManager.Regeneration)
+		{
+			for (int i = SizeY - GameManager.TestHeight + 1; i <= SizeY; ++i)
+			{
+				for (int j = 1; j <= SizeX; ++j)
+				{
+					for (int k = 1; k <= SizeZ; ++k)
+						grid[j, i, k] = 1;
+				}
+
+				grid[SizeX, i, SizeZ] = 0;
 			}
 		}
 
