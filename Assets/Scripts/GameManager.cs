@@ -115,7 +115,8 @@ public class GameManager : MonoBehaviour
 	private const            float            defaultKeyInterval = 0.2f;
 	private                  ParticleRender   particle;
 	private const            string           vfxRotation = "Prefabs/VFX_Rotation";
-	private                  Renderer         cloudRenderer;
+	private                  Renderer         renderTopCloud;
+	private                  Renderer         renderBottomCloud;
 
 	private enum KEY_VALUE
 	{
@@ -181,7 +182,7 @@ public class GameManager : MonoBehaviour
 		{
 			Grid = new GameGrid(ref gridSize, blockSize);
 		}
-		
+
 		startOffset = new Vector3(-Grid.SizeX / 2f + blockSize / 2,
 		                          Grid.SizeY  / 2f - blockSize / 2,
 		                          -Grid.SizeZ / 2f + blockSize / 2);
@@ -215,11 +216,12 @@ public class GameManager : MonoBehaviour
 			StartCoroutine(logicMethods()),
 			StartCoroutine(AngleCalculate()),
 		};
-		
-		if(TestGrid) RenderGrid();
 
-		particle      = null;
-		cloudRenderer = GameObject.Find("Cloud").GetComponent<Renderer>();
+		if (TestGrid) RenderGrid();
+
+		particle          = null;
+		renderTopCloud    = GameObject.Find("CloudTop").GetComponent<Renderer>();
+		renderBottomCloud = GameObject.Find("CloudBottom").GetComponent<Renderer>();
 	}
 
 	private void Update()
@@ -477,7 +479,8 @@ public class GameManager : MonoBehaviour
 				}
 			}
 
-			cloudRenderer.material.SetFloat(color, Mathf.PingPong(Time.time * 0.1f, 1f));
+			renderTopCloud.material.SetFloat(color, Mathf.PingPong(Time.time * 0.1f, 1f));
+			renderBottomCloud.material.SetFloat(color, Mathf.PingPong(Time.time * 0.1f, 1f));
 
 		#endregion
 		}
@@ -1294,7 +1297,7 @@ public class GameManager : MonoBehaviour
 		{
 			isPause  = true;
 			gameOver = true;
-			
+
 			StartCoroutine(GameOverEffect());
 		}
 		else
