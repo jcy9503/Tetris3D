@@ -80,7 +80,8 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private             bool       testModeBlock;
 	public static                        int        TestBlock;
 	[SerializeField] private             int        testBlock = 3;
-	private                              GameObject mainCamera;
+	private                              GameObject mainCameraObj;
+	private                              Camera     mainCamera;
 	private                              Transform  rotatorTr;
 	private                              Quaternion mementoRotation;
 	private                              bool       checkDir;
@@ -190,14 +191,15 @@ public class GameManager : MonoBehaviour
 		shadowObj = GameObject.Find("Shadow");
 		effectObj = GameObject.Find("Effect");
 
-		mainCamera                     = GameObject.Find("Main Camera");
-		mainCamera!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
-		rotatorTr                      = GameObject.Find("Rotator").GetComponent<Transform>();
-		mementoRotation                = Quaternion.identity;
-		Dir                            = false;
-		checkDir                       = false;
-		viewAngle                      = 0;
-		isCameraShaking                = false;
+		mainCameraObj                     = GameObject.Find("Main Camera");
+		mainCameraObj!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
+		mainCamera                        = mainCameraObj.GetComponent<Camera>();
+		rotatorTr                         = GameObject.Find("Rotator").GetComponent<Transform>();
+		mementoRotation                   = Quaternion.identity;
+		Dir                               = false;
+		checkDir                          = false;
+		viewAngle                         = 0;
+		isCameraShaking                   = false;
 
 		blockMeshList  = new List<PrefabMesh>();
 		shadowMeshList = new List<PrefabMesh>();
@@ -259,7 +261,7 @@ public class GameManager : MonoBehaviour
 		RenderLine();
 		lineGlowPower = lineMeshList[0].Renderer.material.GetFloat(power);
 
-		audioSource             = mainCamera.AddComponent<AudioSource>();
+		audioSource             = mainCameraObj.AddComponent<AudioSource>();
 		audioSource.playOnAwake = true;
 		audioSource.loop        = false;
 		bgm = new[]
@@ -1285,28 +1287,28 @@ public class GameManager : MonoBehaviour
 
 	private IEnumerator CameraFOVEffect()
 	{
-		const float target = 178f;
-		float       origin = mainCamera.GetComponent<Camera>().fieldOfView;
+		const float target = 120f;
+		float       origin = mainCamera.fieldOfView;
 		
 		isPause = true;
 
-		while (mainCamera.GetComponent<Camera>().fieldOfView < target)
+		while (mainCamera.fieldOfView < target - 1f)
 		{
-			mainCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(
-			                                                           mainCamera.GetComponent<Camera>().fieldOfView,
-			                                                           target, 0.07f);
+			mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, target, 0.1f);
 
 			yield return new WaitForSeconds(0.01f);
 		}
 		
-		while (mainCamera.GetComponent<Camera>().fieldOfView > origin)
+		while (mainCamera.fieldOfView > origin + 1f)
 		{
-			mainCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(
-			                                                           mainCamera.GetComponent<Camera>().fieldOfView,
-			                                                           origin, 0.1f);
+			mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, origin, 0.2f);
 
 			yield return new WaitForSeconds(0.01f);
 		}
+
+		isPause = false;
+
+		mainCamera.fieldOfView = origin;
 	}
 
 	private IEnumerator GridEffect()
