@@ -28,6 +28,13 @@ public class Coord
 		Z = param.Z;
 	}
 
+	public Coord(Vector3 param)
+	{
+		X = (int)param.x;
+		Y = (int)param.y;
+		Z = (int)param.z;
+	}
+
 	public override string ToString()
 	{
 		return "X: " + X + " Y: " + Y + " Z: " + Z;
@@ -47,7 +54,7 @@ public class Coord
 		=> new(param1.X + param2.X, param1.Y + param2.Y, param1.Z + param2.Z);
 
 	public static Coord operator -(Coord param1, Coord param2)
-		=> param1 + (-param2);
+		=> param1 + -param2;
 
 	public static readonly Coord[] Right =
 	{
@@ -56,14 +63,14 @@ public class Coord
 		new(-1, 0, 0),
 		new(0, 0, 1)
 	};
-	public static readonly Coord[] Left     =
+	public static readonly Coord[] Left =
 	{
 		new(-1, 0, 0),
 		new(0, 0, 1),
 		new(1, 0, 0),
 		new(0, 0, -1)
 	};
-	public static readonly Coord[] Forward  =
+	public static readonly Coord[] Forward =
 	{
 		new(0, 0, 1),
 		new(1, 0, 0),
@@ -77,8 +84,8 @@ public class Coord
 		new(0, 0, 1),
 		new(1, 0, 0)
 	};
-	public static readonly Coord   Up       = new(0, -1, 0);
-	public static readonly Coord   Down     = new(0, 1, 0);
+	public static readonly Coord Up   = new(0, -1, 0);
+	public static readonly Coord Down = new(0, 1, 0);
 }
 
 public interface IBlock

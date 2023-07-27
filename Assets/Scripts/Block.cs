@@ -15,13 +15,13 @@ public class Block : IBlock
 	public const     int     Type = 7;
 	public readonly  int     Size;
 	public           Coord   Pos;
-	private readonly Coord[] tile;
+	public           Coord[] Tile { get; private set; }
 
 	protected Block(int id, int size, Coord[] tile)
 	{
 		this.id   = id;
 		this.Size = size;
-		this.tile = tile;
+		this.Tile = tile;
 	}
 
 	public int GetId() => id;
@@ -44,11 +44,11 @@ public class Block : IBlock
 
 	public Block CopyBlock()
 	{
-		Coord[] tpTile = new Coord[tile.Length];
+		Coord[] tpTile = new Coord[Tile.Length];
 
-		for (int i = 0; i < tile.Length; ++i)
+		for (int i = 0; i < Tile.Length; ++i)
 		{
-			tpTile[i] = tile[i];
+			tpTile[i] = Tile[i];
 		}
 
 		Block tp = new(id, Size, tpTile)
@@ -66,12 +66,12 @@ public class Block : IBlock
 
 	public IEnumerable<Coord> TilePositions()
 	{
-		return tile.Select(pos => new Coord(pos + Pos));
+		return Tile.Select(pos => new Coord(pos + Pos));
 	}
 
 	public void RotateXClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.Y = Size - 1 - tp.Z;
@@ -81,7 +81,7 @@ public class Block : IBlock
 
 	public void RotateXCounterClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.Y = tp.Z;
@@ -91,7 +91,7 @@ public class Block : IBlock
 
 	public void RotateYClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.X = Size - 1 - tp.Z;
@@ -101,7 +101,7 @@ public class Block : IBlock
 
 	public void RotateYCounterClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.X = tp.Z;
@@ -111,7 +111,7 @@ public class Block : IBlock
 
 	public void RotateZClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.X = Size - 1 - tp.Y;
@@ -121,7 +121,7 @@ public class Block : IBlock
 
 	public void RotateZCounterClockWise()
 	{
-		foreach (Coord coord in tile)
+		foreach (Coord coord in Tile)
 		{
 			Coord tp = new(coord);
 			coord.X = tp.Y;

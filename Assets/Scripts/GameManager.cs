@@ -1,16 +1,18 @@
 /*
  * GameManager.cs
  * --------------
- * Made by Lucas Jeong
+ * Made by Lucas Jeong / kimble
  * Contains main game logic and singleton instance.
  * Also contains screen control method.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.VFX;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
@@ -94,45 +96,38 @@ public class GameManager : MonoBehaviour
 		}
 	}
 	private Vector2 clickPos;
-
 	[Space(20)] [Header("Camera Control")] [SerializeField]
 	private float initialCameraRotationX = 15f;
-
 	[SerializeField] private float cameraRotationConstraintX = 55f;
 	[SerializeField] private float cameraSpeed               = 2000f;
 	[SerializeField] private float cameraShakeAmount         = 0.5f;
 	[SerializeField] private float cameraShakeTime           = 0.2f;
 	private                  bool  isCameraShaking;
 	private                  int   viewAngle;
-
 	[Space(20)] [Header("Grid/Block")] [SerializeField]
 	private int[] gridSize = { 10, 22, 10 };
-
 	public static            GameGrid         Grid;
+	private                  bool             gridDestruction;
 	private                  Vector3          startOffset;
 	private static           BlockQueue       BlockQueue { get; set; }
 	private                  Block            currentBlock;
 	private                  Block            shadowBlock;
-	private static readonly  int              alpha        = Shader.PropertyToID("_Alpha");
-	private static readonly  int              clear        = Shader.PropertyToID("_Clear");
-	private static readonly  int              color        = Shader.PropertyToID("_Color");
-	private static readonly  int              emission     = Shader.PropertyToID("_Emission");
-	private static readonly  int              over         = Shader.PropertyToID("_GameOver");
-	private static readonly  int              smoothness   = Shader.PropertyToID("_Smoothness");
-	private static readonly  int              sortingOrder = Shader.PropertyToID("_QueueOffset");
 	private                  bool             canSaveBlock;
 	private                  List<PrefabMesh> blockMeshList;
 	private                  List<PrefabMesh> shadowMeshList;
 	private                  List<PrefabMesh> gridMeshList;
+	private                  List<LineMesh>   lineMeshList;
 	[SerializeField] private float            blockSize    = 1.0f;
 	[SerializeField] private float            downInterval = 1.0f;
 	private                  List<bool>       keyUsing;
 	private                  List<float>      keyIntervals;
 	private const            float            defaultKeyInterval = 0.2f;
-	private                  ParticleRender   particle;
+	private                  ParticleRender   rotationParticle;
 	private const            string           vfxRotation = "Prefabs/VFX_Rotation";
+	private const            string           vfxMove     = "Prefabs/VFX_Move";
 	private                  Renderer         renderTopCloud;
 	private                  Renderer         renderBottomCloud;
+	private                  float            lineGlowPower;
 
 	private enum KEY_VALUE
 	{
@@ -151,14 +146,28 @@ public class GameManager : MonoBehaviour
 		ESC
 	}
 
-	private delegate IEnumerator LogicFunc();
+	private enum SFX_VALUE
+	{
+		CLICK = 0,
+	}
 
-	private        LogicFunc       logicMethods;
-	private        List<Coroutine> logicList;
-	private static GameObject      blockObj;
-	private static GameObject      shadowObj;
-	public static  GameObject      GridObj;
-	private static GameObject      effectObj;
+	private delegate        IEnumerator     LogicFunc();
+	private                 LogicFunc       logicMethods;
+	private                 List<Coroutine> logicList;
+	private static          GameObject      blockObj;
+	private static          GameObject      shadowObj;
+	public static           GameObject      GridObj;
+	private static          GameObject      effectObj;
+	private static readonly int             alpha      = Shader.PropertyToID("_Alpha");
+	private static readonly int             clear      = Shader.PropertyToID("_Clear");
+	private static readonly int             color      = Shader.PropertyToID("_Color");
+	private static readonly int             emission   = Shader.PropertyToID("_Emission");
+	private static readonly int             over       = Shader.PropertyToID("_GameOver");
+	private static readonly int             smoothness = Shader.PropertyToID("_Smoothness");
+	private static readonly int             power      = Shader.PropertyToID("_Power");
+	private                 AudioSource     audioSource;
+	private                 AudioClip[]     bgm;
+	private                 bool            bgmPause;
 
 #endregion
 
@@ -205,6 +214,7 @@ public class GameManager : MonoBehaviour
 			Grid = new GameGrid(ref gridSize, blockSize);
 		}
 
+		gridDestruction = false;
 		startOffset = new Vector3(-Grid.SizeX / 2f + blockSize / 2,
 		                          Grid.SizeY  / 2f - blockSize / 2,
 		                          -Grid.SizeZ / 2f + blockSize / 2);
@@ -241,9 +251,33 @@ public class GameManager : MonoBehaviour
 
 		if (TestGrid) RenderGrid();
 
-		particle          = null;
+		rotationParticle  = null;
 		renderTopCloud    = GameObject.Find("CloudTop").GetComponent<Renderer>();
 		renderBottomCloud = GameObject.Find("CloudBottom").GetComponent<Renderer>();
+
+		lineMeshList = new List<LineMesh>();
+		RenderLine();
+		lineGlowPower = lineMeshList[0].Renderer.material.GetFloat(power);
+
+		audioSource             = mainCamera.AddComponent<AudioSource>();
+		audioSource.playOnAwake = true;
+		audioSource.loop        = false;
+		bgm = new[]
+		{
+			Resources.Load<AudioClip>("BGM/BGM01"),
+			Resources.Load<AudioClip>("BGM/BGM02"),
+			Resources.Load<AudioClip>("BGM/BGM03"),
+			Resources.Load<AudioClip>("BGM/BGM04"),
+			Resources.Load<AudioClip>("BGM/BGM05"),
+			Resources.Load<AudioClip>("BGM/BGM06"),
+			Resources.Load<AudioClip>("BGM/BGM07"),
+			Resources.Load<AudioClip>("BGM/BGM08"),
+			Resources.Load<AudioClip>("BGM/BGM09"),
+			Resources.Load<AudioClip>("BGM/BGM10"),
+			Resources.Load<AudioClip>("BGM/BGM11"),
+			Resources.Load<AudioClip>("BGM/BGM12"),
+		};
+		bgmPause = false;
 	}
 
 	private void Update()
@@ -490,6 +524,19 @@ public class GameManager : MonoBehaviour
 		#endregion
 
 #endif
+
+		#region Sound
+
+			if (bgmPause)
+			{
+				audioSource.UnPause();
+			}
+			else if (!audioSource.isPlaying)
+			{
+				RandomPlay();
+			}
+
+		#endregion
 		}
 
 		else if (isPause)
@@ -521,7 +568,18 @@ public class GameManager : MonoBehaviour
 
 		renderTopCloud.material.SetFloat(color, col);
 		renderBottomCloud.material.SetFloat(color, col);
-		Grid.Mesh.MRenderer.material.SetFloat(color, col);
+
+		if (!gridDestruction)
+		{
+			Grid.Mesh.MRenderer.material.SetFloat(color, col);
+		}
+
+	#endregion
+
+	#region Sound
+
+		audioSource.Pause();
+		bgmPause = true;
 
 	#endregion
 	}
@@ -559,8 +617,8 @@ public class GameManager : MonoBehaviour
 
 			MoveBlockDown();
 
-			if (particle != null)
-				particle.Obj.transform.position -= Vector3.up;
+			if (rotationParticle != null)
+				rotationParticle.Obj.transform.position -= Vector3.up;
 
 			yield return new WaitForSeconds(downInterval);
 		}
@@ -603,6 +661,11 @@ public class GameManager : MonoBehaviour
 		List<int> cleared = Grid.ClearFullRows();
 
 		StartCoroutine(ClearEffect(cleared));
+
+		if (cleared.Count == 4)
+		{
+			StartCoroutine(CameraFOVEffect());
+		}
 
 		RenderGrid();
 
@@ -676,7 +739,7 @@ public class GameManager : MonoBehaviour
 
 #endregion
 
-#region BlockControl
+#region BlockRotation
 
 	private void RotateBlockXClockWise()
 	{
@@ -738,36 +801,36 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                      = Quaternion.Euler(0f, 0f, 90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 1:
-					rotation                      = Quaternion.Euler(90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 2:
-					rotation                      = Quaternion.Euler(0f, 0f, -90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 3:
-					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
@@ -833,36 +896,36 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                      = Quaternion.Euler(0f, 0f, -90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 1:
-					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 2:
-					rotation                      = Quaternion.Euler(0f, 0f, 90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 3:
-					rotation                      = Quaternion.Euler(90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
@@ -888,14 +951,14 @@ public class GameManager : MonoBehaviour
 				case 1:
 				case 2:
 				case 3:
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
@@ -921,14 +984,14 @@ public class GameManager : MonoBehaviour
 				case 1:
 				case 2:
 				case 3:
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
@@ -994,36 +1057,36 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 1:
-					rotation                      = Quaternion.Euler(0f, 0f, 90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 2:
-					rotation                      = Quaternion.Euler(90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 3:
-					rotation                      = Quaternion.Euler(0f, 0f, -90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
@@ -1089,40 +1152,44 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                      = Quaternion.Euler(90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 1:
-					rotation                      = Quaternion.Euler(0f, 0f, -90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 2:
-					rotation                      = Quaternion.Euler(-90f, 0f, 0f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 
 				case 3:
-					rotation                      = Quaternion.Euler(0f, 0f, 90f);
-					particle                      = new ParticleRender(vfxRotation, offset, rotation);
-					particle.Obj.transform.parent = effectObj.transform;
+					rotation                              = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
+					rotationParticle.Obj.transform.parent = effectObj.transform;
 
 					break;
 			}
 
-			Destroy(particle!.Obj, 0.3f);
-			particle = null;
+			Destroy(rotationParticle!.Obj, 0.3f);
+			rotationParticle = null;
 
 			RefreshCurrentBlock();
 		}
 	}
+
+#endregion
+
+#region BlockMove
 
 	private void MoveBlockLeft()
 	{
@@ -1216,23 +1283,76 @@ public class GameManager : MonoBehaviour
 
 #region Effect
 
-	private static IEnumerator GridEffect()
+	private IEnumerator CameraFOVEffect()
 	{
-		const float alphaUnit = 0.01f;
-		float       alphaSet  = Grid.Mesh.MRenderer.material.GetFloat(alpha) + alphaUnit;
-		Vector3     targetLoc = Grid.Mesh.Obj.transform.position             - Vector3.up * 5f;
+		const float target = 178f;
+		float       origin = mainCamera.GetComponent<Camera>().fieldOfView;
+		
+		isPause = true;
+
+		while (mainCamera.GetComponent<Camera>().fieldOfView < target)
+		{
+			mainCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(
+			                                                           mainCamera.GetComponent<Camera>().fieldOfView,
+			                                                           target, 0.07f);
+
+			yield return new WaitForSeconds(0.01f);
+		}
+		
+		while (mainCamera.GetComponent<Camera>().fieldOfView > origin)
+		{
+			mainCamera.GetComponent<Camera>().fieldOfView = Mathf.Lerp(
+			                                                           mainCamera.GetComponent<Camera>().fieldOfView,
+			                                                           origin, 0.1f);
+
+			yield return new WaitForSeconds(0.01f);
+		}
+	}
+
+	private IEnumerator GridEffect()
+	{
+		const float   alphaUnit = 0.01f;
+		float         alphaSet  = Grid.Mesh.MRenderer.material.GetFloat(alpha) + alphaUnit;
+		Vector3       targetLoc = Grid.Mesh.Obj.transform.position             - Vector3.up    * 5f;
+		float         glowSet   = lineGlowPower                                + lineGlowPower * 0.01f;
+		const float   range     = 0.15f;
+		List<Vector3> listRd    = new();
+
+		for (int i = 0; i < 24; ++i)
+		{
+			listRd.Add(new Vector3(Random.Range(-range, range),
+			                       Random.Range(-range, range),
+			                       Random.Range(-range, range)));
+		}
 
 		while ((Grid.Mesh.Obj.transform.position - targetLoc).magnitude > 0.001f)
 		{
 			alphaSet -= 0.01f;
+			glowSet  -= lineGlowPower * 0.01f;
 
 			Grid.Mesh.Obj.transform.position = Vector3.Lerp(Grid.Mesh.Obj.transform.position, targetLoc, 0.02f);
 			Grid.Mesh.MRenderer.material.SetFloat(alpha, Mathf.Max(alphaSet, 0f));
 
+			for (int i = 0; i < lineMeshList.Count; ++i)
+			{
+				lineMeshList[i].Renderer.material.SetFloat(power, glowSet);
+				lineMeshList[i].Renderer.material.SetFloat(alpha, alphaSet);
+				lineMeshList[i].Renderer.SetPosition(0, lineMeshList[i].Renderer.GetPosition(0) +
+				                                        listRd[i * 2]);
+				lineMeshList[i].Renderer.SetPosition(1, lineMeshList[i].Renderer.GetPosition(1) +
+				                                        listRd[i * 2 + 1]);
+			}
+
 			yield return new WaitForSeconds(0.02f);
 		}
 
+		gridDestruction = true;
 		Destroy(Grid.Mesh.Obj);
+
+		foreach (LineMesh mesh in lineMeshList)
+		{
+			Destroy(mesh.Obj);
+		}
 	}
 
 	private IEnumerator GameOverEffect()
@@ -1353,6 +1473,83 @@ public class GameManager : MonoBehaviour
 
 #region Render
 
+	private void RenderLine()
+	{
+		const float width = 0.05f;
+
+		LineMesh mesh01 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX  / 2f, -Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh01);
+
+		LineMesh mesh02 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX  / 2f, Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh02);
+
+		LineMesh mesh03 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY  / 2f, Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh03);
+
+		LineMesh mesh04 = new("Line", GridObj,
+		                      new Vector3(Grid.SizeX / 2f, -Grid.SizeY / 2f, Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX / 2f, Grid.SizeY  / 2f, Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh04);
+
+		LineMesh mesh05 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX  / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh05);
+
+		LineMesh mesh06 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX  / 2f, Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh06);
+
+		LineMesh mesh07 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY  / 2f, -Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh07);
+
+		LineMesh mesh08 = new("Line", GridObj,
+		                      new Vector3(Grid.SizeX / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX / 2f, Grid.SizeY  / 2f, -Grid.SizeZ / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh08);
+
+		LineMesh mesh09 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(-Grid.SizeX / 2f, -Grid.SizeY / 2f, Grid.SizeZ  / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh09);
+
+		LineMesh mesh10 = new("Line", GridObj,
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(-Grid.SizeX / 2f, Grid.SizeY / 2f, Grid.SizeZ  / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh10);
+
+		LineMesh mesh11 = new("Line", GridObj,
+		                      new Vector3(Grid.SizeX / 2f, -Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX / 2f, -Grid.SizeY / 2f, Grid.SizeZ  / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh11);
+
+		LineMesh mesh12 = new("Line", GridObj,
+		                      new Vector3(Grid.SizeX / 2f, Grid.SizeY / 2f, -Grid.SizeZ / 2f),
+		                      new Vector3(Grid.SizeX / 2f, Grid.SizeY / 2f, Grid.SizeZ  / 2f),
+		                      width, "Materials/Line");
+		lineMeshList.Add(mesh12);
+	}
+
 	private void RenderCurrentBlock()
 	{
 		ClearCurrentBlock();
@@ -1454,6 +1651,16 @@ public class GameManager : MonoBehaviour
 #endregion
 
 #region UI
+
+#endregion
+
+#region Sound
+
+	private void RandomPlay()
+	{
+		audioSource.clip = bgm[Random.Range(0, bgm.Length)];
+		audioSource.Play();
+	}
 
 #endregion
 }
