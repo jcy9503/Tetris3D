@@ -6,13 +6,11 @@
  * Also contains screen control method.
  */
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.VFX;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
@@ -67,8 +65,9 @@ public class GameManager : MonoBehaviour
 
 	[Header("Test Mode")] private static bool       gameOver;
 	private static                       bool       isPause;
-	private const                        int        baseScore = 100;
-	public static                        int        Score;
+	private const                        int        baseScore  = 100;
+	private static readonly              int[]      scoreValue = { 1, 2, 4, 8 };
+	public static                        int        TotalScore;
 	public static                        bool       TestGrid;
 	[SerializeField] private             bool       testGrid;
 	public static                        int        TestHeight;
@@ -108,7 +107,6 @@ public class GameManager : MonoBehaviour
 	[Space(20)] [Header("Grid/Block")] [SerializeField]
 	private int[] gridSize = { 10, 22, 10 };
 	public static            GameGrid         Grid;
-	private                  bool             gridDestruction;
 	private                  Vector3          startOffset;
 	private static           BlockQueue       BlockQueue { get; set; }
 	private                  Block            currentBlock;
@@ -125,9 +123,6 @@ public class GameManager : MonoBehaviour
 	private const            float            defaultKeyInterval = 0.2f;
 	private                  ParticleRender   rotationParticle;
 	private const            string           vfxRotation = "Prefabs/VFX_Rotation";
-	private const            string           vfxMove     = "Prefabs/VFX_Move";
-	private                  Renderer         renderTopCloud;
-	private                  Renderer         renderBottomCloud;
 	private                  float            lineGlowPower;
 
 	private enum KEY_VALUE
@@ -149,7 +144,28 @@ public class GameManager : MonoBehaviour
 
 	private enum SFX_VALUE
 	{
-		CLICK = 0,
+		BOOL = 0,
+		CLICK,
+		CLOSE,
+		DROP1,
+		DROP2,
+		GAME_OVER,
+		SHIFT,
+		ITEM,
+		ROTATE1,
+		ROTATE2,
+		SWITCH,
+		UNAVAILABLE,
+		HARD_DROP1,
+		HARD_DROP2,
+		HARD_DROP3,
+		HARD_DROP4,
+		HARD_DROP5,
+		MOVE,
+		PAUSE,
+		CLEAR,
+		TETRIS1,
+		TETRIS2,
 	}
 
 	private delegate        IEnumerator     LogicFunc();
@@ -161,14 +177,16 @@ public class GameManager : MonoBehaviour
 	private static          GameObject      effectObj;
 	private static readonly int             alpha      = Shader.PropertyToID("_Alpha");
 	private static readonly int             clear      = Shader.PropertyToID("_Clear");
-	private static readonly int             color      = Shader.PropertyToID("_Color");
 	private static readonly int             emission   = Shader.PropertyToID("_Emission");
 	private static readonly int             over       = Shader.PropertyToID("_GameOver");
 	private static readonly int             smoothness = Shader.PropertyToID("_Smoothness");
 	private static readonly int             power      = Shader.PropertyToID("_Power");
-	private                 AudioSource     audioSource;
-	private                 AudioClip[]     bgm;
-	private                 bool            bgmPause;
+	private static readonly int             color      = Shader.PropertyToID("_Color");
+	private static readonly int             speed      = Shader.PropertyToID("_Speed");
+	private                 AudioSource     audioSourceBGM;
+	private                 AudioSource     audioSourceSFX;
+	private                 AudioClip[]     bgmSource;
+	private                 AudioClip[]     sfxSource;
 
 #endregion
 
@@ -176,9 +194,9 @@ public class GameManager : MonoBehaviour
 
 	private void Awake()
 	{
-		gameOver = false;
-		isPause  = false;
-		Score    = 0;
+		gameOver   = false;
+		isPause    = false;
+		TotalScore = 0;
 
 		TestGrid      = testGrid;
 		TestHeight    = testHeight;
@@ -216,7 +234,6 @@ public class GameManager : MonoBehaviour
 			Grid = new GameGrid(ref gridSize, blockSize);
 		}
 
-		gridDestruction = false;
 		startOffset = new Vector3(-Grid.SizeX / 2f + blockSize / 2,
 		                          Grid.SizeY  / 2f - blockSize / 2,
 		                          -Grid.SizeZ / 2f + blockSize / 2);
@@ -254,17 +271,16 @@ public class GameManager : MonoBehaviour
 		if (TestGrid) RenderGrid();
 
 		rotationParticle  = null;
-		renderTopCloud    = GameObject.Find("CloudTop").GetComponent<Renderer>();
-		renderBottomCloud = GameObject.Find("CloudBottom").GetComponent<Renderer>();
 
 		lineMeshList = new List<LineMesh>();
 		RenderLine();
 		lineGlowPower = lineMeshList[0].Renderer.material.GetFloat(power);
 
-		audioSource             = mainCameraObj.AddComponent<AudioSource>();
-		audioSource.playOnAwake = true;
-		audioSource.loop        = false;
-		bgm = new[]
+		audioSourceBGM             = mainCameraObj.AddComponent<AudioSource>();
+		audioSourceBGM.playOnAwake = true;
+		audioSourceBGM.loop        = false;
+		audioSourceBGM.volume      = 0.4f;
+		bgmSource = new[]
 		{
 			Resources.Load<AudioClip>("BGM/BGM01"),
 			Resources.Load<AudioClip>("BGM/BGM02"),
@@ -279,7 +295,37 @@ public class GameManager : MonoBehaviour
 			Resources.Load<AudioClip>("BGM/BGM11"),
 			Resources.Load<AudioClip>("BGM/BGM12"),
 		};
-		bgmPause = false;
+		RandomPlayBGM();
+
+		audioSourceSFX             = GridObj.AddComponent<AudioSource>();
+		audioSourceSFX.playOnAwake = true;
+		audioSourceSFX.loop        = false;
+		sfxSource = new[]
+		{
+			Resources.Load<AudioClip>("SFX/Bool"),
+			Resources.Load<AudioClip>("SFX/Click"),
+			Resources.Load<AudioClip>("SFX/Close"),
+			Resources.Load<AudioClip>("SFX/Drop1"),
+			Resources.Load<AudioClip>("SFX/Drop2"),
+			Resources.Load<AudioClip>("SFX/GameOver"),
+			Resources.Load<AudioClip>("SFX/Shift"),
+			Resources.Load<AudioClip>("SFX/Item"),
+			Resources.Load<AudioClip>("SFX/Rotate1"),
+			Resources.Load<AudioClip>("SFX/Rotate2"),
+			Resources.Load<AudioClip>("SFX/Switch"),
+			Resources.Load<AudioClip>("SFX/Unavailable"),
+			Resources.Load<AudioClip>("SFX/HardDrop01"),
+			Resources.Load<AudioClip>("SFX/HardDrop02"),
+			Resources.Load<AudioClip>("SFX/HardDrop03"),
+			Resources.Load<AudioClip>("SFX/HardDrop04"),
+			Resources.Load<AudioClip>("SFX/HardDrop05"),
+			Resources.Load<AudioClip>("SFX/Move"),
+			Resources.Load<AudioClip>("SFX/Pause"),
+			Resources.Load<AudioClip>("SFX/Clear"),
+			Resources.Load<AudioClip>("SFX/Tetris1"),
+			Resources.Load<AudioClip>("SFX/Tetris2"),
+		};
+		
 	}
 
 	private void Update()
@@ -397,6 +443,8 @@ public class GameManager : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.LeftShift) && canSaveBlock)
 			{
+				PlaySfx(SFX_VALUE.SHIFT);
+				
 				currentBlock = BlockQueue.SaveAndUpdateBlock(currentBlock);
 				canSaveBlock = false;
 				RefreshCurrentBlock();
@@ -497,7 +545,8 @@ public class GameManager : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
-				isPause = true;
+				isPause  = true;
+				PauseBGM(3f);
 				GamePause();
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
@@ -505,40 +554,11 @@ public class GameManager : MonoBehaviour
 
 		#endregion
 
-#elif UNITY_ANDROID
-		#region ScreenControl
-
-			if (Input.touchCount == 1 && !cameraShake)
-			{
-				Touch touch = Input.GetTouch(0);
-
-				if (touch.phase == TouchPhase.Began)
-				{
-					mementoRotation = rotatorTr.rotation;
-					clickPos = Vector2.zero;
-				}
-			}
-
-		#endregion
-
-		#region BlockControl
-
-		#endregion
-
 #endif
-
-		#region Sound
-
-			if (bgmPause)
+			if (!audioSourceBGM.isPlaying && !gameOver)
 			{
-				audioSource.UnPause();
+				RandomPlayBGM();
 			}
-			else if (!audioSource.isPlaying)
-			{
-				RandomPlay();
-			}
-
-		#endregion
 		}
 
 		else if (isPause)
@@ -548,6 +568,7 @@ public class GameManager : MonoBehaviour
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
 				GameResume();
+				ResumeBGM(3f);
 				isPause                      = false;
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
@@ -555,35 +576,6 @@ public class GameManager : MonoBehaviour
 
 #endif
 		}
-
-	#region Effect
-
-		if (shadowMeshList.Count > 0)
-		{
-			foreach (PrefabMesh mesh in shadowMeshList)
-			{
-				mesh.Renderer.material.SetFloat(alpha, Mathf.PingPong(Time.time, 0.7f) + 0.15f);
-			}
-		}
-
-		float col = Mathf.PingPong(Time.time * 0.1f, 2f);
-
-		renderTopCloud.material.SetFloat(color, col);
-		renderBottomCloud.material.SetFloat(color, col);
-
-		if (!gridDestruction)
-		{
-			Grid.Mesh.MRenderer.material.SetFloat(color, col);
-		}
-
-	#endregion
-
-	#region Sound
-
-		audioSource.Pause();
-		bgmPause = true;
-
-	#endregion
 	}
 
 #endregion
@@ -592,6 +584,8 @@ public class GameManager : MonoBehaviour
 
 	private void GamePause()
 	{
+		PlaySfx(SFX_VALUE.PAUSE);
+		
 		foreach (Coroutine coroutine in logicList)
 		{
 			StopCoroutine(coroutine);
@@ -661,12 +655,20 @@ public class GameManager : MonoBehaviour
 		}
 
 		List<int> cleared = Grid.ClearFullRows();
+		ScoreCalc(cleared.Count);
 
 		StartCoroutine(ClearEffect(cleared));
 
 		if (cleared.Count == 4)
 		{
+			PlaySfx(SFX_VALUE.TETRIS1);
+			PlaySfx(SFX_VALUE.TETRIS2);
+			
 			StartCoroutine(CameraFOVEffect());
+		}
+		else if (cleared.Count > 0)
+		{
+			PlaySfx(SFX_VALUE.CLEAR);
 		}
 
 		RenderGrid();
@@ -675,10 +677,14 @@ public class GameManager : MonoBehaviour
 
 		if (IsGameOver())
 		{
+			PlaySfx(SFX_VALUE.GAME_OVER);
+			
 			isPause  = true;
 			gameOver = true;
 
+			StartCoroutine(FadeOutBGM(1f));
 			StartCoroutine(GameOverEffect());
+			audioSourceBGM.Stop();
 		}
 		else
 		{
@@ -686,6 +692,13 @@ public class GameManager : MonoBehaviour
 			currentBlock = BlockQueue.GetAndUpdateBlock();
 			RefreshCurrentBlock();
 		}
+	}
+
+	private void ScoreCalc(int cleared)
+	{
+		if (cleared == 0) return;
+		
+		TotalScore += baseScore * scoreValue[cleared - 1];
 	}
 
 #endregion
@@ -770,6 +783,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			switch (viewAngle)
 			{
 				case 0:
@@ -795,6 +810,8 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -865,6 +882,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			switch (viewAngle)
 			{
 				case 0:
@@ -890,6 +909,8 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -939,10 +960,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.RotateYCounterClockWise();
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 			Quaternion rotation = Quaternion.Euler(0f, 0f, 180f);
@@ -972,10 +997,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.RotateYClockWise();
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 			Quaternion rotation = Quaternion.identity;
@@ -1026,6 +1055,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			switch (viewAngle)
 			{
 				case 0:
@@ -1051,6 +1082,8 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+			
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -1121,6 +1154,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			switch (viewAngle)
 			{
 				case 0:
@@ -1146,6 +1181,8 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
+			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
+			
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -1199,10 +1236,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.Move(Coord.Right[viewAngle]);
 		}
 		else
 		{
+			PlaySfx(SFX_VALUE.MOVE);
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -1213,10 +1254,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.Move(Coord.Left[viewAngle]);
 		}
 		else
 		{
+			PlaySfx(SFX_VALUE.MOVE);
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -1227,10 +1272,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.Move(Coord.Backward[viewAngle]);
 		}
 		else
 		{
+			PlaySfx(SFX_VALUE.MOVE);
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -1241,10 +1290,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
+			PlaySfx(SFX_VALUE.UNAVAILABLE);
+			
 			currentBlock.Move(Coord.Forward[viewAngle]);
 		}
 		else
 		{
+			PlaySfx(SFX_VALUE.MOVE);
+			
 			RefreshCurrentBlock();
 		}
 	}
@@ -1260,6 +1313,8 @@ public class GameManager : MonoBehaviour
 			return;
 		}
 
+		PlayRandomSfx(SFX_VALUE.DROP1, SFX_VALUE.DROP2);
+		
 		currentBlock.Move(Coord.Up);
 		PlaceBlock();
 	}
@@ -1275,7 +1330,15 @@ public class GameManager : MonoBehaviour
 		} while (BlockFits(currentBlock));
 
 		if (num > 2)
+		{
+			PlayRandomSfx(SFX_VALUE.HARD_DROP1, SFX_VALUE.HARD_DROP5);
+			
 			StartCoroutine(CameraShake());
+		}
+		else
+		{
+			PlayRandomSfx(SFX_VALUE.DROP1, SFX_VALUE.DROP2);
+		}
 
 		currentBlock.Move(Coord.Up);
 		PlaceBlock();
@@ -1287,28 +1350,34 @@ public class GameManager : MonoBehaviour
 
 	private IEnumerator CameraFOVEffect()
 	{
-		const float target = 120f;
-		float       origin = mainCamera.fieldOfView;
-		
+		const float target      = 120f;
+		float       originFOV   = mainCamera.fieldOfView;
+		float       originSpeed = Grid.Mesh.MRenderer.material.GetFloat(speed);
+
 		isPause = true;
+		Grid.Mesh.MRenderer.material.SetFloat(speed, 10f);
 
 		while (mainCamera.fieldOfView < target - 1f)
 		{
-			mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, target, 0.1f);
+			mainCamera.fieldOfView =  Mathf.Lerp(mainCamera.fieldOfView, target, 0.1f);
+			audioSourceBGM.pitch   -= 0.02f;
 
 			yield return new WaitForSeconds(0.01f);
 		}
-		
-		while (mainCamera.fieldOfView > origin + 1f)
+
+		while (mainCamera.fieldOfView > originFOV + 1f)
 		{
-			mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, origin, 0.2f);
+			mainCamera.fieldOfView =  Mathf.Lerp(mainCamera.fieldOfView, originFOV, 0.2f);
+			audioSourceBGM.pitch   += 0.02f;
 
 			yield return new WaitForSeconds(0.01f);
 		}
 
 		isPause = false;
 
-		mainCamera.fieldOfView = origin;
+		mainCamera.fieldOfView = originFOV;
+		Grid.Mesh.MRenderer.material.SetFloat(speed, originSpeed);
+		audioSourceBGM.pitch = 1f;
 	}
 
 	private IEnumerator GridEffect()
@@ -1348,7 +1417,6 @@ public class GameManager : MonoBehaviour
 			yield return new WaitForSeconds(0.02f);
 		}
 
-		gridDestruction = true;
 		Destroy(Grid.Mesh.Obj);
 
 		foreach (LineMesh mesh in lineMeshList)
@@ -1658,10 +1726,60 @@ public class GameManager : MonoBehaviour
 
 #region Sound
 
-	private void RandomPlay()
+	private void RandomPlayBGM()
 	{
-		audioSource.clip = bgm[Random.Range(0, bgm.Length)];
-		audioSource.Play();
+		audioSourceBGM.clip = bgmSource[Random.Range(1, bgmSource.Length)];
+		audioSourceBGM.Play();
+	}
+
+	private IEnumerator FadeOutBGM(float acc)
+	{
+		const float volDown = 0.01f;
+		
+		while (audioSourceBGM.volume > 0f)
+		{
+			audioSourceBGM.volume -= volDown * acc;
+			
+			yield return new WaitForSeconds(0.03f);
+		}
+		
+		audioSourceBGM.Pause();
+	}
+
+	private IEnumerator FadeInBGM(float acc)
+	{
+		const float volUp = 0.01f;
+		
+		audioSourceBGM.Play();
+
+		while (audioSourceBGM.volume < 0.4f)
+		{
+			audioSourceBGM.volume += volUp * acc;
+
+			yield return new WaitForSeconds(0.03f);
+		}
+	}
+
+	private void PauseBGM(float acc)
+	{
+		StartCoroutine(FadeOutBGM(acc));
+	}
+
+	private void ResumeBGM(float acc)
+	{
+		StartCoroutine(FadeInBGM(acc));
+	}
+
+	private void PlaySfx(SFX_VALUE value)
+	{
+		audioSourceSFX.clip = sfxSource[(int)value];
+		audioSourceSFX.Play();
+	}
+
+	private void PlayRandomSfx(SFX_VALUE start, SFX_VALUE end)
+	{
+		int rand = Random.Range((int)start, (int)end + 1);
+		audioSourceSFX.PlayOneShot(sfxSource[rand]);
 	}
 
 #endregion
