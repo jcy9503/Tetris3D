@@ -241,6 +241,7 @@ public class GameManager : MonoBehaviour
 	private                 List<Transform> cubeTrs;
 	private                 Animator[]      cubeAnimators;
 	private                 Renderer[]      cubeRenderers;
+	private                 List<bool>      cubesFloating;
 	private const           int             totalAnim = 4;
 	private static readonly int             phase     = Animator.StringToHash("Phase");
 	private                 Coroutine       animFunc;
@@ -373,6 +374,7 @@ public class GameManager : MonoBehaviour
 		cubeTrs       = new List<Transform>();
 		cubeAnimators = cubeMeshes.GetComponentsInChildren<Animator>();
 		cubeRenderers = cubeMeshes.GetComponentsInChildren<Renderer>();
+		cubesFloating = new List<bool>();
 
 		Transform[] trs = cubeMeshes.GetComponentsInChildren<Transform>();
 
@@ -404,8 +406,13 @@ public class GameManager : MonoBehaviour
 
 			if (randInt != 0)
 			{
+				cubesFloating.Add(true);
 				animator.gameObject.transform.rotation *= Quaternion.Euler(Random.Range(0f, 360f), 0f,
 				                                                           Random.Range(0f, 360f));
+			}
+			else
+			{
+				cubesFloating.Add(false);
 			}
 		}
 
@@ -1388,6 +1395,7 @@ public class GameManager : MonoBehaviour
 		PlayRandomSfx(SFX_VALUE.DROP1, SFX_VALUE.DROP2);
 
 		currentBlock.Move(Coord.Up);
+		DropEffect();
 		PlaceBlock();
 	}
 
@@ -1911,10 +1919,11 @@ public class GameManager : MonoBehaviour
 		{
 			int   randObj   = Random.Range(0,    cubeAnimators.Length);
 			int   randInt   = Random.Range(0,    totalAnim);
-			float randFloat = Random.Range(0.5f, 1f);
 
-			cubeAnimators[randObj].SetInteger(phase, randInt);
-			cubeAnimators[randObj].speed = randFloat;
+			if (!cubesFloating[randObj])
+			{
+				cubeAnimators[randObj].SetInteger(phase, randInt);
+			}
 
 			yield return new WaitForSeconds(1.0f);
 		}
