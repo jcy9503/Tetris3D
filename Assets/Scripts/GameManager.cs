@@ -129,6 +129,7 @@ public class GameManager : MonoBehaviour
 	private const            float            defaultKeyInterval = 0.2f;
 	private                  ParticleRender   rotationParticle;
 	private const            string           vfxRotation = "Prefabs/VFX_Rotation";
+	private const            string           vfxDrop     = "Prefabs/VFX_Drop";
 	private                  float            lineGlowPower;
 
 	private enum KEY_VALUE
@@ -220,7 +221,7 @@ public class GameManager : MonoBehaviour
 	private static          GameObject      blockObj;
 	private static          GameObject      shadowObj;
 	public static           GameObject      GridObj;
-	private static          GameObject      effectObj;
+	public static           GameObject      EffectObj;
 	private static readonly int             alpha         = Shader.PropertyToID("_Alpha");
 	private static readonly int             clear         = Shader.PropertyToID("_Clear");
 	private static readonly int             emission      = Shader.PropertyToID("_Emission");
@@ -272,7 +273,7 @@ public class GameManager : MonoBehaviour
 		GridObj   = GameObject.Find("Grid");
 		blockObj  = GameObject.Find("Blocks");
 		shadowObj = GameObject.Find("Shadow");
-		effectObj = GameObject.Find("Effect");
+		EffectObj = GameObject.Find("Effect");
 
 		mainCameraObj                     = GameObject.Find("Main Camera");
 		mainCameraObj!.transform.rotation = Quaternion.Euler(initialCameraRotationX, 0f, 0f);
@@ -352,9 +353,9 @@ public class GameManager : MonoBehaviour
 		{
 			bgmSource.Add(Resources.Load<AudioClip>(path));
 		}
-		
+
 		RandomPlayBGM();
-		
+
 		audioSourcesSFX = GridObj.GetComponentsInChildren<AudioSource>();
 		sfxIdx          = -1;
 
@@ -412,7 +413,7 @@ public class GameManager : MonoBehaviour
 		{
 			rd.material.SetFloat(speed, Random.Range(0.15f, 0.45f));
 		}
-		
+
 		animFunc = StartCoroutine(AnimChange());
 	}
 
@@ -769,7 +770,7 @@ public class GameManager : MonoBehaviour
 
 			isPause  = true;
 			gameOver = true;
-			
+
 			StopCoroutine(animFunc);
 			StartCoroutine(PitchDownBGM(0.2f));
 			StartCoroutine(GameOverEffect());
@@ -909,30 +910,26 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                              = Quaternion.Euler(0f, 0f, 90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 1:
-					rotation                              = Quaternion.Euler(90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 2:
-					rotation                              = Quaternion.Euler(0f, 0f, -90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 3:
-					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1008,30 +1005,26 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                              = Quaternion.Euler(0f, 0f, -90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 1:
-					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 2:
-					rotation                              = Quaternion.Euler(0f, 0f, 90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 3:
-					rotation                              = Quaternion.Euler(90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1067,8 +1060,7 @@ public class GameManager : MonoBehaviour
 				case 1:
 				case 2:
 				case 3:
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1104,8 +1096,7 @@ public class GameManager : MonoBehaviour
 				case 1:
 				case 2:
 				case 3:
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1181,30 +1172,26 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 1:
-					rotation                              = Quaternion.Euler(0f, 0f, 90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 2:
-					rotation                              = Quaternion.Euler(90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 3:
-					rotation                              = Quaternion.Euler(0f, 0f, -90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1280,30 +1267,26 @@ public class GameManager : MonoBehaviour
 			switch (viewAngle)
 			{
 				case 0:
-					rotation                              = Quaternion.Euler(90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 1:
-					rotation                              = Quaternion.Euler(0f, 0f, -90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, -90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 2:
-					rotation                              = Quaternion.Euler(-90f, 0f, 0f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(-90f, 0f, 0f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 
 				case 3:
-					rotation                              = Quaternion.Euler(0f, 0f, 90f);
-					rotationParticle                      = new ParticleRender(vfxRotation, offset, rotation);
-					rotationParticle.Obj.transform.parent = effectObj.transform;
+					rotation         = Quaternion.Euler(0f, 0f, 90f);
+					rotationParticle = new ParticleRender(vfxRotation, offset, rotation);
 
 					break;
 			}
@@ -1430,12 +1413,28 @@ public class GameManager : MonoBehaviour
 		}
 
 		currentBlock.Move(Coord.Up);
+		DropEffect();
 		PlaceBlock();
 	}
 
 #endregion
 
 #region Effect
+
+	private void DropEffect()
+	{
+		int yMax = currentBlock.Tile.Select(coord => coord.Y).Prepend(-1).Max();
+
+		foreach (Coord coord in currentBlock.Tile)
+		{
+			if (coord.Y != yMax) continue;
+
+			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + coord.ToVector() +
+			                 new Vector3(0f, -blockSize / 2f, 0f);
+			ParticleRender ptc = new(vfxDrop, offset, Quaternion.identity);
+			Destroy(ptc.Obj, 3f);
+		}
+	}
 
 	private IEnumerator CameraFOVEffect()
 	{
@@ -1599,7 +1598,7 @@ public class GameManager : MonoBehaviour
 					rb.angularDrag = Random.Range(0.5f, 2f);
 
 					clearMeshList.Add(mesh);
-					mesh.Obj.transform.parent = effectObj.transform;
+					mesh.Obj.transform.parent = EffectObj.transform;
 				}
 			}
 		}
@@ -1811,11 +1810,9 @@ public class GameManager : MonoBehaviour
 #endregion
 
 #region UI
-	
-	
+
 	private void InitUI()
 	{
-		
 	}
 
 #endregion

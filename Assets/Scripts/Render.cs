@@ -268,7 +268,8 @@ public class ParticleRender
 
 	public ParticleRender(string particlePath, Vector3 pos, Quaternion rotation)
 	{
-		Obj      = Object.Instantiate(Resources.Load<GameObject>(particlePath), pos, rotation);
-		Renderer = Obj.GetComponentInChildren<VisualEffect>();
+		Obj                  = Object.Instantiate(Resources.Load<GameObject>(particlePath), pos, rotation);
+		Obj.transform.parent = GameManager.EffectObj.transform;
+		Renderer             = Obj.GetComponentInChildren<VisualEffect>();
 	}
 }
