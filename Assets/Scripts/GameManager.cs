@@ -8,11 +8,13 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
 
+[SuppressMessage("ReSharper", "IteratorNeverReturns")]
 public class GameManager : MonoBehaviour
 {
 #region Singleton
@@ -96,16 +98,20 @@ public class GameManager : MonoBehaviour
 		}
 	}
 	private Vector2 clickPos;
+
 	[Space(20)] [Header("Camera Control")] [SerializeField]
 	private float initialCameraRotationX = 15f;
+
 	[SerializeField] private float cameraRotationConstraintX = 55f;
 	[SerializeField] private float cameraSpeed               = 2000f;
 	[SerializeField] private float cameraShakeAmount         = 0.5f;
 	[SerializeField] private float cameraShakeTime           = 0.2f;
 	private                  bool  isCameraShaking;
 	private                  int   viewAngle;
+
 	[Space(20)] [Header("Grid/Block")] [SerializeField]
 	private int[] gridSize = { 10, 22, 10 };
+
 	public static            GameGrid         Grid;
 	private                  Vector3          startOffset;
 	private static           BlockQueue       BlockQueue { get; set; }
@@ -168,31 +174,90 @@ public class GameManager : MonoBehaviour
 		TETRIS2,
 	}
 
-	private delegate        IEnumerator     LogicFunc();
-	private                 LogicFunc       logicMethods;
+	private readonly string[] BGM_PATH =
+	{
+		"BGM/BGM01",
+		"BGM/BGM02",
+		"BGM/BGM03",
+		"BGM/BGM04",
+		"BGM/BGM05",
+		"BGM/BGM06",
+		"BGM/BGM07",
+		"BGM/BGM08",
+		"BGM/BGM09",
+		"BGM/BGM10",
+		"BGM/BGM11",
+		"BGM/BGM12",
+	};
+
+	private readonly string[] SFX_PATH =
+	{
+		"SFX/Bool",
+		"SFX/Click",
+		"SFX/Close",
+		"SFX/Drop1",
+		"SFX/Drop2",
+		"SFX/GameOver",
+		"SFX/Shift",
+		"SFX/Item",
+		"SFX/Rotate1",
+		"SFX/Rotate2",
+		"SFX/Switch",
+		"SFX/Unavailable",
+		"SFX/HardDrop01",
+		"SFX/HardDrop02",
+		"SFX/HardDrop03",
+		"SFX/HardDrop04",
+		"SFX/HardDrop05",
+		"SFX/Move",
+		"SFX/Pause",
+		"SFX/Clear",
+		"SFX/Tetris1",
+		"SFX/Tetris2",
+	};
+
 	private                 List<Coroutine> logicList;
 	private static          GameObject      blockObj;
 	private static          GameObject      shadowObj;
 	public static           GameObject      GridObj;
 	private static          GameObject      effectObj;
-	private static readonly int             alpha      = Shader.PropertyToID("_Alpha");
-	private static readonly int             clear      = Shader.PropertyToID("_Clear");
-	private static readonly int             emission   = Shader.PropertyToID("_Emission");
-	private static readonly int             over       = Shader.PropertyToID("_GameOver");
-	private static readonly int             smoothness = Shader.PropertyToID("_Smoothness");
-	private static readonly int             power      = Shader.PropertyToID("_Power");
-	private static readonly int             color      = Shader.PropertyToID("_Color");
-	private static readonly int             speed      = Shader.PropertyToID("_Speed");
+	private static readonly int             alpha         = Shader.PropertyToID("_Alpha");
+	private static readonly int             clear         = Shader.PropertyToID("_Clear");
+	private static readonly int             emission      = Shader.PropertyToID("_Emission");
+	private static readonly int             over          = Shader.PropertyToID("_GameOver");
+	private static readonly int             smoothness    = Shader.PropertyToID("_Smoothness");
+	private static readonly int             power         = Shader.PropertyToID("_Power");
+	private static readonly int             color         = Shader.PropertyToID("_Color");
+	private static readonly int             speed         = Shader.PropertyToID("_Speed");
+	private static readonly int             gradientColor = Shader.PropertyToID("_GradientColor");
 	private                 AudioSource     audioSourceBGM;
-	private                 AudioSource     audioSourceSFX;
-	private                 AudioClip[]     bgmSource;
-	private                 AudioClip[]     sfxSource;
+	private                 AudioSource[]   audioSourcesSFX;
+	private                 List<AudioClip> bgmSource;
+	private                 List<AudioClip> sfxSource;
+	private                 int             sfxIdx;
+	private const           float           bgmVolumeOrigin = 0.2f;
+	private                 GameObject      cubeMeshes;
+	private                 List<Transform> cubeTrs;
+	private                 Animator[]      cubeAnimators;
+	private                 Renderer[]      cubeRenderers;
+	private const           int             totalAnim = 4;
+	private static readonly int             phase     = Animator.StringToHash("Phase");
+	private                 Coroutine       animFunc;
 
 #endregion
 
 #region MonoFunction
 
 	private void Awake()
+	{
+		Init();
+
+		SoundInit();
+
+		BackgroundInit();
+	}
+
+	private void Init()
 	{
 		gameOver   = false;
 		isPause    = false;
@@ -257,75 +322,98 @@ public class GameManager : MonoBehaviour
 			defaultKeyInterval, defaultKeyInterval, defaultKeyInterval,
 			defaultKeyInterval, defaultKeyInterval, defaultKeyInterval,
 			defaultKeyInterval, defaultKeyInterval, 0.1f,
-			defaultKeyInterval,
+			2f,
 		};
-
-		logicMethods = BlockDown;
 
 		logicList = new List<Coroutine>
 		{
-			StartCoroutine(logicMethods()),
+			StartCoroutine(BlockDown()),
 			StartCoroutine(AngleCalculate()),
 		};
 
 		if (TestGrid) RenderGrid();
 
-		rotationParticle  = null;
+		rotationParticle = null;
 
 		lineMeshList = new List<LineMesh>();
 		RenderLine();
 		lineGlowPower = lineMeshList[0].Renderer.material.GetFloat(power);
+	}
 
+	private void SoundInit()
+	{
 		audioSourceBGM             = mainCameraObj.AddComponent<AudioSource>();
 		audioSourceBGM.playOnAwake = true;
 		audioSourceBGM.loop        = false;
-		audioSourceBGM.volume      = 0.4f;
-		bgmSource = new[]
-		{
-			Resources.Load<AudioClip>("BGM/BGM01"),
-			Resources.Load<AudioClip>("BGM/BGM02"),
-			Resources.Load<AudioClip>("BGM/BGM03"),
-			Resources.Load<AudioClip>("BGM/BGM04"),
-			Resources.Load<AudioClip>("BGM/BGM05"),
-			Resources.Load<AudioClip>("BGM/BGM06"),
-			Resources.Load<AudioClip>("BGM/BGM07"),
-			Resources.Load<AudioClip>("BGM/BGM08"),
-			Resources.Load<AudioClip>("BGM/BGM09"),
-			Resources.Load<AudioClip>("BGM/BGM10"),
-			Resources.Load<AudioClip>("BGM/BGM11"),
-			Resources.Load<AudioClip>("BGM/BGM12"),
-		};
-		RandomPlayBGM();
+		audioSourceBGM.volume      = bgmVolumeOrigin;
+		bgmSource                  = new List<AudioClip>();
 
-		audioSourceSFX             = GridObj.AddComponent<AudioSource>();
-		audioSourceSFX.playOnAwake = true;
-		audioSourceSFX.loop        = false;
-		sfxSource = new[]
+		foreach (string path in BGM_PATH)
 		{
-			Resources.Load<AudioClip>("SFX/Bool"),
-			Resources.Load<AudioClip>("SFX/Click"),
-			Resources.Load<AudioClip>("SFX/Close"),
-			Resources.Load<AudioClip>("SFX/Drop1"),
-			Resources.Load<AudioClip>("SFX/Drop2"),
-			Resources.Load<AudioClip>("SFX/GameOver"),
-			Resources.Load<AudioClip>("SFX/Shift"),
-			Resources.Load<AudioClip>("SFX/Item"),
-			Resources.Load<AudioClip>("SFX/Rotate1"),
-			Resources.Load<AudioClip>("SFX/Rotate2"),
-			Resources.Load<AudioClip>("SFX/Switch"),
-			Resources.Load<AudioClip>("SFX/Unavailable"),
-			Resources.Load<AudioClip>("SFX/HardDrop01"),
-			Resources.Load<AudioClip>("SFX/HardDrop02"),
-			Resources.Load<AudioClip>("SFX/HardDrop03"),
-			Resources.Load<AudioClip>("SFX/HardDrop04"),
-			Resources.Load<AudioClip>("SFX/HardDrop05"),
-			Resources.Load<AudioClip>("SFX/Move"),
-			Resources.Load<AudioClip>("SFX/Pause"),
-			Resources.Load<AudioClip>("SFX/Clear"),
-			Resources.Load<AudioClip>("SFX/Tetris1"),
-			Resources.Load<AudioClip>("SFX/Tetris2"),
-		};
+			bgmSource.Add(Resources.Load<AudioClip>(path));
+		}
 		
+		RandomPlayBGM();
+		
+		audioSourcesSFX = GridObj.GetComponentsInChildren<AudioSource>();
+		sfxIdx          = -1;
+
+		sfxSource = new List<AudioClip>();
+
+		foreach (string path in SFX_PATH)
+		{
+			sfxSource.Add(Resources.Load<AudioClip>(path));
+		}
+	}
+
+	private void BackgroundInit()
+	{
+		cubeMeshes    = GameObject.Find("Meshes");
+		cubeTrs       = new List<Transform>();
+		cubeAnimators = cubeMeshes.GetComponentsInChildren<Animator>();
+		cubeRenderers = cubeMeshes.GetComponentsInChildren<Renderer>();
+
+		Transform[] trs = cubeMeshes.GetComponentsInChildren<Transform>();
+
+		foreach (Transform tr in trs)
+		{
+			if (tr.parent != cubeMeshes.transform) continue;
+
+			cubeTrs.Add(tr);
+		}
+
+		foreach (Transform tr in cubeTrs)
+		{
+			float randFloat = Random.Range(0f, 360f);
+
+			tr.rotation = Quaternion.Euler(0f, randFloat, 0f);
+
+			randFloat = Random.Range(0.3f, 1.5f);
+
+			tr.localScale = Vector3.one * randFloat;
+		}
+
+		foreach (Animator animator in cubeAnimators)
+		{
+			float randFloat = Random.Range(0.3f, 1f);
+			int   randInt   = Mathf.Clamp(Random.Range(-2, totalAnim), 0, totalAnim - 1);
+
+			animator.speed = randFloat;
+			animator.SetInteger(phase, randInt);
+
+			if (randInt != 0)
+			{
+				animator.gameObject.transform.rotation *= Quaternion.Euler(Random.Range(0f, 360f), 0f,
+				                                                           Random.Range(0f, 360f));
+			}
+		}
+
+		foreach (Renderer rd in cubeRenderers)
+		{
+			rd.material.SetFloat(speed, Random.Range(0.15f, 0.45f));
+		}
+		
+		animFunc = StartCoroutine(AnimChange());
 	}
 
 	private void Update()
@@ -443,8 +531,8 @@ public class GameManager : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.LeftShift) && canSaveBlock)
 			{
-				PlaySfx(SFX_VALUE.SHIFT);
-				
+				StartCoroutine(PlaySfx(SFX_VALUE.SHIFT));
+
 				currentBlock = BlockQueue.SaveAndUpdateBlock(currentBlock);
 				canSaveBlock = false;
 				RefreshCurrentBlock();
@@ -545,7 +633,7 @@ public class GameManager : MonoBehaviour
 
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
-				isPause  = true;
+				isPause = true;
 				PauseBGM(3f);
 				GamePause();
 				keyUsing[(int)KEY_VALUE.ESC] = true;
@@ -584,8 +672,8 @@ public class GameManager : MonoBehaviour
 
 	private void GamePause()
 	{
-		PlaySfx(SFX_VALUE.PAUSE);
-		
+		StartCoroutine(PlaySfx(SFX_VALUE.PAUSE));
+
 		foreach (Coroutine coroutine in logicList)
 		{
 			StopCoroutine(coroutine);
@@ -594,7 +682,7 @@ public class GameManager : MonoBehaviour
 
 	private void GameResume()
 	{
-		logicList.Add(StartCoroutine(logicMethods()));
+		logicList.Add(StartCoroutine(BlockDown()));
 		logicList.Add(StartCoroutine(AngleCalculate()));
 	}
 
@@ -661,14 +749,14 @@ public class GameManager : MonoBehaviour
 
 		if (cleared.Count == 4)
 		{
-			PlaySfx(SFX_VALUE.TETRIS1);
-			PlaySfx(SFX_VALUE.TETRIS2);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.TETRIS1));
+			StartCoroutine(PlaySfx(SFX_VALUE.TETRIS2));
+
 			StartCoroutine(CameraFOVEffect());
 		}
 		else if (cleared.Count > 0)
 		{
-			PlaySfx(SFX_VALUE.CLEAR);
+			StartCoroutine(PlaySfx(SFX_VALUE.CLEAR));
 		}
 
 		RenderGrid();
@@ -677,14 +765,15 @@ public class GameManager : MonoBehaviour
 
 		if (IsGameOver())
 		{
-			PlaySfx(SFX_VALUE.GAME_OVER);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.GAME_OVER));
+
 			isPause  = true;
 			gameOver = true;
-
-			StartCoroutine(FadeOutBGM(1f));
+			
+			StopCoroutine(animFunc);
+			StartCoroutine(PitchDownBGM(0.2f));
 			StartCoroutine(GameOverEffect());
-			audioSourceBGM.Stop();
+			StartCoroutine(AnimStop());
 		}
 		else
 		{
@@ -697,7 +786,7 @@ public class GameManager : MonoBehaviour
 	private void ScoreCalc(int cleared)
 	{
 		if (cleared == 0) return;
-		
+
 		TotalScore += baseScore * scoreValue[cleared - 1];
 	}
 
@@ -783,8 +872,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			switch (viewAngle)
 			{
 				case 0:
@@ -882,8 +971,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			switch (viewAngle)
 			{
 				case 0:
@@ -960,8 +1049,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.RotateYCounterClockWise();
 		}
 		else
@@ -997,8 +1086,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.RotateYClockWise();
 		}
 		else
@@ -1055,8 +1144,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			switch (viewAngle)
 			{
 				case 0:
@@ -1083,7 +1172,7 @@ public class GameManager : MonoBehaviour
 		else
 		{
 			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
-			
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -1154,8 +1243,8 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			switch (viewAngle)
 			{
 				case 0:
@@ -1182,7 +1271,7 @@ public class GameManager : MonoBehaviour
 		else
 		{
 			PlayRandomSfx(SFX_VALUE.ROTATE1, SFX_VALUE.ROTATE2);
-			
+
 			Vector3 offset = startOffset + currentBlock.Pos.ToVector() + new Vector3(-0.5f, 0.5f, -0.5f) * blockSize +
 			                 new Vector3(1f, -1f, 1f) * (currentBlock.Size * blockSize * 0.5f);
 
@@ -1236,14 +1325,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.Move(Coord.Right[viewAngle]);
 		}
 		else
 		{
-			PlaySfx(SFX_VALUE.MOVE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.MOVE));
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -1254,14 +1343,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.Move(Coord.Left[viewAngle]);
 		}
 		else
 		{
-			PlaySfx(SFX_VALUE.MOVE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.MOVE));
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -1272,14 +1361,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.Move(Coord.Backward[viewAngle]);
 		}
 		else
 		{
-			PlaySfx(SFX_VALUE.MOVE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.MOVE));
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -1290,14 +1379,14 @@ public class GameManager : MonoBehaviour
 
 		if (!BlockFits(currentBlock))
 		{
-			PlaySfx(SFX_VALUE.UNAVAILABLE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.UNAVAILABLE));
+
 			currentBlock.Move(Coord.Forward[viewAngle]);
 		}
 		else
 		{
-			PlaySfx(SFX_VALUE.MOVE);
-			
+			StartCoroutine(PlaySfx(SFX_VALUE.MOVE));
+
 			RefreshCurrentBlock();
 		}
 	}
@@ -1314,7 +1403,7 @@ public class GameManager : MonoBehaviour
 		}
 
 		PlayRandomSfx(SFX_VALUE.DROP1, SFX_VALUE.DROP2);
-		
+
 		currentBlock.Move(Coord.Up);
 		PlaceBlock();
 	}
@@ -1332,7 +1421,7 @@ public class GameManager : MonoBehaviour
 		if (num > 2)
 		{
 			PlayRandomSfx(SFX_VALUE.HARD_DROP1, SFX_VALUE.HARD_DROP5);
-			
+
 			StartCoroutine(CameraShake());
 		}
 		else
@@ -1628,7 +1717,7 @@ public class GameManager : MonoBehaviour
 		{
 			Vector3 offset = new(coord.X, -coord.Y, coord.Z);
 			PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset,
-			                      Block.MatPath[currentBlock.GetId()], coord, ShadowCastingMode.On);
+			                      Block.MatPath[currentBlock.GetId()], coord, ShadowCastingMode.Off);
 
 			blockMeshList.Add(mesh);
 			mesh.Obj.transform.parent = blockObj.transform;
@@ -1672,7 +1761,8 @@ public class GameManager : MonoBehaviour
 					{
 						Vector3 offset = new(j, -i, k);
 						PrefabMesh mesh = new("Prefabs/Mesh_Block", startOffset + offset, Block.MatPath[^1],
-						                      new Coord(j, i, k), ShadowCastingMode.On);
+						                      new Coord(j, i, k), ShadowCastingMode.Off);
+						mesh.Renderer.material.SetFloat(gradientColor, (float)i / (Grid.SizeY - 1));
 
 						gridMeshList.Add(mesh);
 						mesh.Obj.transform.parent = GridObj.transform;
@@ -1721,6 +1811,12 @@ public class GameManager : MonoBehaviour
 #endregion
 
 #region UI
+	
+	
+	private void InitUI()
+	{
+		
+	}
 
 #endregion
 
@@ -1728,36 +1824,57 @@ public class GameManager : MonoBehaviour
 
 	private void RandomPlayBGM()
 	{
-		audioSourceBGM.clip = bgmSource[Random.Range(1, bgmSource.Length)];
+		audioSourceBGM.clip = bgmSource[Random.Range(1, bgmSource.Count)];
 		audioSourceBGM.Play();
+	}
+
+	private IEnumerator PitchDownBGM(float acc)
+	{
+		const float volDown   = 0.01f;
+		const float pitchDown = 0.01f;
+
+		while (audioSourceBGM.volume > 0f)
+		{
+			audioSourceBGM.volume -= volDown   * acc;
+			audioSourceBGM.pitch  -= pitchDown * acc;
+
+			yield return new WaitForSeconds(0.03f);
+		}
+
+		audioSourceBGM.Stop();
+		audioSourceBGM.volume = bgmVolumeOrigin;
+		audioSourceBGM.pitch  = 1f;
 	}
 
 	private IEnumerator FadeOutBGM(float acc)
 	{
 		const float volDown = 0.01f;
-		
+
 		while (audioSourceBGM.volume > 0f)
 		{
 			audioSourceBGM.volume -= volDown * acc;
-			
+
 			yield return new WaitForSeconds(0.03f);
 		}
-		
+
+		audioSourceBGM.volume = 0f;
 		audioSourceBGM.Pause();
 	}
 
 	private IEnumerator FadeInBGM(float acc)
 	{
 		const float volUp = 0.01f;
-		
+
 		audioSourceBGM.Play();
 
-		while (audioSourceBGM.volume < 0.4f)
+		while (audioSourceBGM.volume < bgmVolumeOrigin)
 		{
 			audioSourceBGM.volume += volUp * acc;
 
 			yield return new WaitForSeconds(0.03f);
 		}
+
+		audioSourceBGM.volume = bgmVolumeOrigin;
 	}
 
 	private void PauseBGM(float acc)
@@ -1770,16 +1887,60 @@ public class GameManager : MonoBehaviour
 		StartCoroutine(FadeInBGM(acc));
 	}
 
-	private void PlaySfx(SFX_VALUE value)
+	private IEnumerator PlaySfx(SFX_VALUE value)
 	{
-		audioSourceSFX.clip = sfxSource[(int)value];
-		audioSourceSFX.Play();
+		sfxIdx = Mathf.Clamp(sfxIdx + 1, 0, audioSourcesSFX.Length - 1);
+		audioSourcesSFX[sfxIdx].PlayOneShot(sfxSource[(int)value]);
+
+		yield return new WaitForSeconds(1f);
+
+		--sfxIdx;
 	}
 
 	private void PlayRandomSfx(SFX_VALUE start, SFX_VALUE end)
 	{
 		int rand = Random.Range((int)start, (int)end + 1);
-		audioSourceSFX.PlayOneShot(sfxSource[rand]);
+
+		StartCoroutine(PlaySfx((SFX_VALUE)rand));
+	}
+
+#endregion
+
+#region Background
+
+	private IEnumerator AnimChange()
+	{
+		while (true)
+		{
+			int   randObj   = Random.Range(0,    cubeAnimators.Length);
+			int   randInt   = Random.Range(0,    totalAnim);
+			float randFloat = Random.Range(0.5f, 1f);
+
+			cubeAnimators[randObj].SetInteger(phase, randInt);
+			cubeAnimators[randObj].speed = randFloat;
+
+			yield return new WaitForSeconds(1.0f);
+		}
+	}
+
+	private IEnumerator AnimStop()
+	{
+		const float slowDown = 0.01f;
+
+		while (cubeAnimators[0].speed > 0.01f)
+		{
+			foreach (Animator anim in cubeAnimators)
+			{
+				anim.speed = Mathf.Clamp(anim.speed - slowDown, 0f, 1f);
+			}
+
+			yield return new WaitForSeconds(0.1f);
+		}
+
+		foreach (Animator anim in cubeAnimators)
+		{
+			anim.speed = 0f;
+		}
 	}
 
 #endregion
