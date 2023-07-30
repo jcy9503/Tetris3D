@@ -10,8 +10,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
+using System.Xml.Serialization;
+using TMPro;
+using System.Linq.Expressions;
+using System.Reflection;
+using System;
+using Unity.VisualScripting;
 
 public class GameManager : MonoBehaviour
 {
@@ -160,6 +167,84 @@ public class GameManager : MonoBehaviour
 	public static  GameObject      GridObj;
 	private static GameObject      effectObj;
 
+
+
+    private Button pauseHomeBtn;
+	private RectTransform curPlay;
+	private RectTransform curMain;
+	private RectTransform curOption;
+	private RectTransform curLeader;
+
+
+    private			Button pauseBtn;
+	private			Image pauseScreen;
+	private			Button resumePlay;
+	private			Image arrowUp;
+	private			Image arrowDown;
+	private			Image arrowLeft;
+	private			Image arrowRight;
+	private			Image xRotation;
+	private			Image xIRotation;
+	private			Image yRotation;
+	private			Image yIRotation;
+	private			Image zRotation;
+	private			Image zIRotation;
+    private			Text curScore;
+
+	private			Image gameoverScreen;
+	private Text gameoverText;
+	private RectTransform Anchor1;
+    private RectTransform Anchor2;
+    private			Button retryButton;
+	private			Button homeButton;
+	
+	private			Text finalScore;
+
+
+	private			Image mainTitle;
+	private			Image mainImage;
+	private			Button gameStart;
+	private			Button optionBtn;
+	private			Button leaderBoard;
+	private			Button quitBtn;
+	private			Image quitMsg;
+	private			Button quitYes;
+	private			Button quitNo;
+
+
+	private RectTransform soundPanel;
+    private RectTransform graphicPanel;
+    private RectTransform controlPanel;
+    private			TextMeshProUGUI optionTitle;
+	private string[] optionTitles = { "Sound", "Graphics", "Controls"  };
+    private			Button soundTab;
+	private			Slider bgmSlider;
+	private			Slider sfxSlider;
+	private			float bgmVolume = 1.0f;
+	private			float sfxVolume = 1.0f;
+
+	private			Button graphicTab;
+    private			TextMeshProUGUI blkOption;
+	private			string blkOption_Mono = "Mono";
+	private			string blkOption_Color = "Color";
+    private			Image btnOptionImg;
+	private			Button blkOptionBtn;
+	private			Button infoBtn;
+
+    private			Button controlTab;
+	private			Button btnMode;
+	private			Button destroyOnoff;
+	private Image destroyCheck;
+	private			Button rotationOnoff;
+    private Image rotationCheck;
+
+
+    private			TextMeshProUGUI firstG;
+	private			TextMeshProUGUI secondG;
+	private			TextMeshProUGUI thirdG;
+	private			Image cloneG;
+	
+
 #endregion
 
 #region MonoFunction
@@ -244,7 +329,89 @@ public class GameManager : MonoBehaviour
 		particle          = null;
 		renderTopCloud    = GameObject.Find("CloudTop").GetComponent<Renderer>();
 		renderBottomCloud = GameObject.Find("CloudBottom").GetComponent<Renderer>();
-	}
+
+       
+        #region MainScreen
+        curPlay = GameObject.Find("PlayScreen").GetComponent<RectTransform>();
+        curMain = GameObject.Find("MainScreen").GetComponent<RectTransform>();
+        curOption = GameObject.Find("OptionScreen").GetComponent<RectTransform>();
+        curLeader = GameObject.Find("LeaderBoard").GetComponent<RectTransform>();
+
+        mainTitle = GameObject.Find("Title").GetComponent<Image>(); 
+		mainImage = GameObject.Find("Main_Castle_Glow").GetComponent<Image>();
+		gameStart = GameObject.Find("Game_Start").AddComponent<Button>();
+        optionBtn = GameObject.Find("Option").AddComponent<Button>(); 
+        leaderBoard = GameObject.Find("Leader_Board").AddComponent<Button>();
+        quitBtn = GameObject.Find("Quit").AddComponent<Button>(); 
+		quitYes = GameObject.Find("Quit_Yes").AddComponent<Button>();
+        quitNo = GameObject.Find("Quit_No").AddComponent<Button>();
+        quitMsg = GameObject.Find("Quit_Panel").GetComponent<Image>();
+        #endregion
+		#region PlayScreen
+        pauseBtn = GameObject.Find("Pause").GetComponent<Button>();
+        pauseScreen = GameObject.Find("PauseScreen").GetComponent<Image>();
+        pauseHomeBtn = GameObject.Find("Pause_Home").GetComponent<Button>();
+        resumePlay = GameObject.Find("Pause_Resume").GetComponent<Button>();
+        
+
+        arrowUp = GameObject.Find("Arrow_Up").GetComponent<Image>(); new UIElement(arrowUp);
+        arrowDown = GameObject.Find("Arrow_Down").GetComponent<Image>(); new UIElement(arrowDown);
+        arrowRight = GameObject.Find("Arrow_Right").GetComponent<Image>(); new UIElement(arrowRight);
+        arrowLeft = GameObject.Find("Arrow_Left").GetComponent<Image>(); new UIElement(arrowLeft);
+
+        xRotation = GameObject.Find("X_ClockWise").GetComponent<Image>(); new UIElement(xRotation);
+        xIRotation = GameObject.Find("X_R_ClockWise").GetComponent<Image>(); new UIElement(xIRotation);
+        yRotation = GameObject.Find("Y_ClockWise").GetComponent<Image>(); new UIElement(yRotation);
+        yIRotation = GameObject.Find("Y_R_ClockWise").GetComponent<Image>(); new UIElement(yIRotation);
+        zRotation = GameObject.Find("Z_ClockWise").GetComponent<Image>(); new UIElement(zRotation);
+        zIRotation = GameObject.Find("Z_R_ClockWise").GetComponent<Image>(); new UIElement(zIRotation);
+
+		gameoverScreen = GameObject.Find("GameOver").GetComponent<Image>();
+		Anchor1 = GameObject.Find("Anchor1").GetComponent<RectTransform>();
+        Anchor2 = GameObject.Find("Anchor2").GetComponent<RectTransform>();
+        retryButton = GameObject.Find("Retry").AddComponent<Button>();
+        homeButton = GameObject.Find("Home").GetComponent<Button>();
+		#endregion
+
+		soundPanel = GameObject.Find("SoundBtns").GetComponent<RectTransform>();
+        graphicPanel = GameObject.Find("GraphicBtns").GetComponent<RectTransform>();
+        controlPanel = GameObject.Find("ControlBtns").GetComponent<RectTransform>();
+
+        optionTitle = GameObject.Find("Option_Title").GetComponent<TextMeshProUGUI>();
+		soundTab = GameObject.Find("Sound_Tab").GetComponent<Button>();
+		soundTab.onClick.AddListener(openSoundTab);
+		
+        bgmSlider = GameObject.Find("BGM_Slider").GetComponent<Slider>(); bgmSlider.value = bgmVolume;
+		
+        sfxSlider = GameObject.Find("SFX_Slider").GetComponent<Slider>(); sfxSlider.value = sfxVolume;
+
+
+        graphicTab = GameObject.Find("Graphic_Tab").GetComponent<Button>();
+		graphicTab.onClick.AddListener(openGraphicTab);
+        destroyCheck = GameObject.Find("Destroy_Check").GetComponent<Image>();
+        rotationCheck = GameObject.Find("Rotation_Check").GetComponent<Image>();
+		destroyOnoff = GameObject.Find("Destroy_Effect_Box").GetComponent<Button>();
+		destroyOnoff.onClick.AddListener(()=> imageOnOff(destroyCheck));
+		rotationOnoff = GameObject.Find("Rotation_Effect_Box").GetComponent<Button>();
+        rotationOnoff.onClick.AddListener(() => imageOnOff(rotationCheck));
+
+        blkOption = GameObject.Find("ColorChange_Text").GetComponent<TextMeshProUGUI>(); blkOption.text = blkOption_Color;
+		blkOptionBtn = GameObject.Find("ColorChange_Handle").GetComponent<Button>();
+		
+		btnOptionImg = GameObject.Find("ColorChange").GetComponent<Image>();
+
+        controlTab = GameObject.Find("Control_Tab").GetComponent<Button>();
+		controlTab.onClick.AddListener(openControlTab);
+
+		leaderBoard.onClick.AddListener(() => moveScreen(curMain, curLeader));
+		cloneG = GameObject.Find("Boards").GetComponent<Image>();
+
+		initializeMain();
+		initializePlay();
+		initializeOption();
+		initializeLeader();
+		initializeUI();
+    }
 
 	private void Update()
 	{
@@ -375,6 +542,7 @@ public class GameManager : MonoBehaviour
 				MoveBlockLeft();
 				keyUsing[(int)KEY_VALUE.LEFT] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.LEFT));
+				StartCoroutine(BtnClick(arrowLeft));
 			}
 
 			if (Input.GetKey(KeyCode.D) && !keyUsing[(int)KEY_VALUE.RIGHT])
@@ -382,56 +550,64 @@ public class GameManager : MonoBehaviour
 				MoveBlockRight();
 				keyUsing[(int)KEY_VALUE.RIGHT] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.RIGHT));
-			}
+                StartCoroutine(BtnClick(arrowRight));
+            }
 
 			if (Input.GetKey(KeyCode.W) && !keyUsing[(int)KEY_VALUE.UP])
 			{
 				MoveBlockForward();
 				keyUsing[(int)KEY_VALUE.UP] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.UP));
-			}
+                StartCoroutine(BtnClick(arrowUp));
+            }
 
 			if (Input.GetKey(KeyCode.S) && !keyUsing[(int)KEY_VALUE.DOWN])
 			{
 				MoveBlockBackward();
 				keyUsing[(int)KEY_VALUE.DOWN] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.DOWN));
-			}
+                StartCoroutine(BtnClick(arrowDown));
+            }
 
 			if ((Input.GetKey(KeyCode.O) || Input.GetKey(KeyCode.Keypad7)) && !keyUsing[(int)KEY_VALUE.ROTATE_X])
 			{
 				RotateBlockXCounterClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_X] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_X));
-			}
+                StartCoroutine(BtnClick(xRotation));
+            }
 
 			if ((Input.GetKey(KeyCode.P) || Input.GetKey(KeyCode.Keypad8)) && !keyUsing[(int)KEY_VALUE.ROTATE_X_INV])
 			{
 				RotateBlockXClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_X_INV] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_X_INV));
-			}
+                StartCoroutine(BtnClick(xIRotation));
+            }
 
 			if ((Input.GetKey(KeyCode.K) || Input.GetKey(KeyCode.Keypad4)) && !keyUsing[(int)KEY_VALUE.ROTATE_Y])
 			{
 				RotateBlockYClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_Y] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Y));
-			}
+                StartCoroutine(BtnClick(yRotation));
+            }
 
 			if ((Input.GetKey(KeyCode.L) || Input.GetKey(KeyCode.Keypad5)) && !keyUsing[(int)KEY_VALUE.ROTATE_Y_INV])
 			{
 				RotateBlockYCounterClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_Y_INV] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Y_INV));
-			}
+                StartCoroutine(BtnClick(yIRotation));
+            }
 
 			if ((Input.GetKey(KeyCode.M) || Input.GetKey(KeyCode.Keypad1)) && !keyUsing[(int)KEY_VALUE.ROTATE_Z])
 			{
 				RotateBlockZCounterClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_Z] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Z));
-			}
+                StartCoroutine(BtnClick(zRotation));
+            }
 
 			if ((Input.GetKey(KeyCode.Comma) || Input.GetKey(KeyCode.Keypad2)) &&
 			    !keyUsing[(int)KEY_VALUE.ROTATE_Z_INV])
@@ -439,7 +615,8 @@ public class GameManager : MonoBehaviour
 				RotateBlockZClockWise();
 				keyUsing[(int)KEY_VALUE.ROTATE_Z_INV] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ROTATE_Z_INV));
-			}
+                StartCoroutine(BtnClick(zIRotation));
+            }
 
 			if (Input.GetKey(KeyCode.Space) && !keyUsing[(int)KEY_VALUE.SPACE])
 			{
@@ -465,12 +642,14 @@ public class GameManager : MonoBehaviour
 				GamePause();
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
+				StartCoroutine(BtnClick(pauseBtn.image));
 			}
 
-		#endregion
+			
+            #endregion
 
 #elif UNITY_ANDROID
-		#region ScreenControl
+            #region ScreenControl
 
 			if (Input.touchCount == 1 && !cameraShake)
 			{
@@ -483,16 +662,16 @@ public class GameManager : MonoBehaviour
 				}
 			}
 
-		#endregion
+        #endregion
 
-		#region BlockControl
+        #region BlockControl
 
-		#endregion
+        #endregion
 
 #endif
-		}
+        }
 
-		else if (isPause)
+        else if (isPause)
 		{
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN
 
@@ -502,7 +681,8 @@ public class GameManager : MonoBehaviour
 				isPause                      = false;
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
-			}
+				
+            }
 
 #endif
 		}
@@ -623,11 +803,204 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-#endregion
+    private IEnumerator BtnClick(Image image)
+    {
+        float interval = 0.1f;
+        Color originColor = image.color;
+        Color pressed = new Color(255, 255, 255, 0.2f);
+		Vector3 trans = new Vector3(0.01f, 0.01f);
+		Vector3 originSize = image.transform.localScale;
+		while (true)
+		{
+            image.transform.localScale = Vector3.Slerp(image.transform.localScale, trans, interval);
+            image.color = Color.Lerp(image.color, pressed, interval);
 
-#region CameraControl
+            yield return new WaitForSeconds(interval);
 
-	private IEnumerator AngleCalculate()
+			image.transform.localScale = originSize;
+            image.color = originColor;
+
+            yield break;
+        }
+    }
+	private IEnumerator ImgMove(Transform image, Vector3 targetPos)
+	{
+		float interval = 0.1f;
+		Vector3 originPos = image.transform.localPosition;
+
+		float comparePos = (image.transform.localPosition.x + targetPos.x) - targetPos.x;
+
+		if (comparePos >= targetPos.x)
+		{
+			while (true)
+			{
+				image.transform.localPosition -= Vector3.Slerp(image.transform.localPosition, originPos, interval);
+
+				yield break;
+			}
+		}
+		else
+		{
+            while (true)
+            {
+                image.transform.localPosition += Vector3.Slerp(originPos, targetPos, interval);
+
+                yield break;
+            }
+        }
+	}
+	public IEnumerator LerpImage(Image image)
+	{
+		Color originAlpha = new Color(255f, 255f, 255f, 1f);
+		Color lowAlpha = new Color (255f, 255f, 255f, 0f);
+		float interval = 0.1f;
+
+		while (true)
+		{
+			image.color = Color.Lerp(image.color, lowAlpha, (interval + 0.4f) * Time.deltaTime);
+
+			yield return new WaitForSeconds(interval);
+
+			image.color = Color.Lerp(image.color, originAlpha, (interval + 0.4f) * Time.deltaTime);
+			
+			yield break;
+		}
+	}
+	public void FadeinOut(RectTransform fadeOut, RectTransform fadeIn)
+	{
+		while (true)
+		{
+            Screen.brightness -= 0.1f * Time.deltaTime;
+            if (Screen.brightness == 0f) break;
+        }
+        fadeOut.gameObject.SetActive(false);
+        while (true)
+		{
+			fadeIn.gameObject.SetActive(true);
+			Screen.brightness += 0.1f * Time.deltaTime;
+			if (Screen.brightness == 1f) break;
+        }
+	}
+	//public IEnumerator MoveScreen(RectTransform curScreen, RectTransform nextScreen)
+	//{
+ //       float interval = 0.1f;
+ //       float loading = 0.3f;
+ //       while (true)
+	//	{
+ //           Screen.brightness -= loading * Time.deltaTime;
+	//		if (Screen.brightness == 0f)
+	//		{
+	//			curScreen.gameObject.SetActive(false);
+	//			break;
+	//		}
+ //       }
+
+	//	nextScreen.gameObject.SetActive(true);
+
+	//	yield return new WaitForSeconds(interval);
+		
+	//	while (true)
+	//	{
+	//		Screen.brightness += loading * Time.deltaTime;
+	//		if (Screen.brightness == 1f) yield break;
+	//	}
+	//}
+	public void moveScreen(RectTransform curScreen, RectTransform nextScreen)
+	{
+		curScreen.gameObject.SetActive(false);
+		nextScreen.gameObject.SetActive(true);
+	}
+
+	private void volumeControl(float value, Slider slider)
+	{
+		slider.value = value;
+	}
+	private void openSoundTab()
+	{
+		soundPanel.gameObject.SetActive(true);
+		graphicPanel.gameObject.SetActive(false);
+        controlPanel.gameObject.SetActive(false);
+    }
+	private void openGraphicTab()
+	{
+        soundPanel.gameObject.SetActive(false);
+        graphicPanel.gameObject.SetActive(true);
+        controlPanel.gameObject.SetActive(false);
+    }
+	private void openControlTab()
+	{
+        soundPanel.gameObject.SetActive(false);
+        graphicPanel.gameObject.SetActive(false);
+        controlPanel.gameObject.SetActive(true);
+    }
+	private void cloneGrades(Image Boards)
+	{
+		Vector3 pos = new Vector3(0, -10f);
+		for (int i = 0; i < 7; i++)
+		{
+            Instantiate(Boards, pos, Quaternion.identity);
+        }
+		
+	}
+	private void imageOnOff(Image blink)
+	{
+		blink.enabled = !blink.enabled;
+	}
+    public void initializeUI()
+    {
+		initializeMain();
+        curPlay.gameObject.SetActive(false);
+        curOption.gameObject.SetActive(false);
+        curLeader.gameObject.SetActive(false);
+    }
+
+    public void initializePlay()
+	{
+		pauseBtn.onClick.AddListener(delegate { pauseScreen.gameObject.SetActive(true); });
+		pauseBtn.onClick.AddListener(delegate { GamePause(); });
+		pauseHomeBtn.onClick.AddListener(delegate { moveScreen(curPlay, curMain); });
+		resumePlay.onClick.AddListener(delegate { pauseScreen.gameObject.SetActive(false); });
+		retryButton.onClick.AddListener(delegate { initializePlay(); });
+		homeButton.onClick.AddListener(delegate { moveScreen(curPlay, curMain); });
+
+		if (gameOver)
+		{ 
+			gameoverScreen.gameObject.SetActive(true);
+			ImgMove(gameoverText.transform, Anchor1.transform.position);
+			ImgMove(homeButton.transform, Anchor2.transform.position);
+			ImgMove(retryButton.transform, Anchor2.transform.position);
+		}
+
+		pauseScreen.gameObject.SetActive(false);
+		gameoverScreen.gameObject.SetActive(false);
+	}
+	public void initializeMain()
+	{
+		gameStart.onClick.AddListener(delegate { moveScreen(curMain, curPlay); });
+		optionBtn.onClick.AddListener(delegate { moveScreen(curMain, curOption); });
+		leaderBoard.onClick.AddListener(delegate { moveScreen(curMain, curPlay); });
+        quitBtn.onClick.AddListener(delegate { quitMsg.gameObject.SetActive(true); });
+
+        quitYes.onClick.AddListener(delegate { Application.Quit(); });
+        quitNo.onClick.AddListener(delegate { quitMsg.gameObject.SetActive(false); });
+
+        quitMsg.gameObject.SetActive(false);
+    }
+	public void initializeOption()
+	{
+		soundPanel.gameObject.SetActive(true);
+		graphicPanel.gameObject.SetActive(false);
+		controlPanel.gameObject.SetActive(false);
+	}
+	public void initializeLeader()
+	{
+		cloneGrades(cloneG);
+	}
+    #endregion
+
+    #region CameraControl
+
+    private IEnumerator AngleCalculate()
 	{
 		while (true)
 		{
@@ -1451,9 +1824,50 @@ public class GameManager : MonoBehaviour
 		gridMeshList.Clear();
 	}
 
-#endregion
+    #endregion
 
-#region UI
+    #region UI
 
-#endregion
+    public class UIElement
+    {
+        private GameObject obj;
+        private Image img;
+        private Button btn;
+        private Button.ButtonClickedEvent click;
+        private RectTransform rect;
+		GameManager manager;
+
+        public UIElement()
+        {
+            CreateBasic();
+        }
+		public UIElement(Image image)
+		{
+			CreateBasic();
+			CreateButton(image);
+		}
+        public UIElement(Image image, string str)
+		{
+            CreateBasic();
+            FindCreateButton(image, str);
+        }
+
+        private void CreateBasic()
+        {
+            obj = new GameObject();
+            rect = obj.AddComponent<RectTransform>();
+        }
+		private void CreateButton(Image image)
+		{
+			this.img = image;
+			btn = img.gameObject.AddComponent<Button>();
+		}
+		private void FindCreateButton(Image image, string str)
+        {
+			image = GameObject.Find(str).GetComponent<Image>();
+            btn = image.gameObject.AddComponent<Button>();
+        }
+
+    }
+    #endregion
 }

@@ -7,6 +7,47 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.VFX;
+
+/// <summary>
+/// line mesh rendering using LineRenderer
+/// </summary>
+public class LineMesh
+{
+	public GameObject   Obj      { get; private set; }
+	public LineRenderer Renderer { get; set; }
+
+	/// <summary>
+	/// main constructor of LineMesh
+	/// </summary>
+	/// <param name="name">LineMesh GameObject name</param>
+	/// <param name="parent">parent GameObject</param>
+	/// <param name="pos1">start position</param>
+	/// <param name="pos2">end position</param>
+	/// <param name="width">line width</param>
+	/// <param name="matPath">material path</param>
+	public LineMesh(string name,  GameObject parent, Vector3 pos1, Vector3 pos2,
+	                float  width, string     matPath)
+	{
+		Obj = new GameObject(name)
+		{
+			transform =
+			{
+				parent = parent.transform
+			}
+		};
+		Renderer               = Obj.AddComponent<LineRenderer>();
+		Renderer.positionCount = 2;
+		Renderer.SetPosition(0, pos1);
+		Renderer.SetPosition(1, pos2);
+		Renderer.startWidth    = width;
+		Renderer.endWidth      = width;
+		Renderer.useWorldSpace = true;
+		Renderer.startColor    = Color.white;
+		Renderer.endColor      = Color.white;
+		Renderer.material      = new Material(Resources.Load<Material>(matPath));
+	}
+}
 
 /// <summary>
 /// cube mesh rendering class using UnityEngine
@@ -29,11 +70,11 @@ public class CubeMesh
 	/// <param name="z">depth</param>
 	/// <param name="unit">default unit of size</param>
 	/// <param name="inverse">flipping faces option</param>
-	/// <param name="materialPath">material data path in Resources/</param>
+	/// <param name="matPath">material data path in Resources/</param>
 	/// <param name="bTexture">using texture option</param>
 	/// <param name="texture">Texture2D object</param>
-	public CubeMesh(string name,         int  x,        int       y, int z, float unit, bool inverse,
-	                string materialPath, bool bTexture, Texture2D texture)
+	public CubeMesh(string name,    int  x,        int       y, int z, float unit, bool inverse,
+	                string matPath, bool bTexture, Texture2D texture)
 	{
 		Obj       = new GameObject(name);
 		MFilter   = Obj.AddComponent<MeshFilter>();
@@ -45,11 +86,11 @@ public class CubeMesh
 
 		if (bTexture)
 		{
-			CreateMesh(materialPath, texture);
+			CreateMesh(matPath, texture);
 		}
 		else
 		{
-			CreateMesh(materialPath);
+			CreateMesh(matPath);
 		}
 	}
 
@@ -199,7 +240,7 @@ public class CubeMesh
 }
 
 /// <summary>
-/// prefab mesh rendering class
+/// prefab mesh load class
 /// </summary>
 public class PrefabMesh
 {
@@ -218,14 +259,16 @@ public class PrefabMesh
 }
 
 /// <summary>
-/// particle rendering class
+/// particle load class
 /// </summary>
 public class ParticleRender
 {
-	public GameObject Obj { get; set; }
+	public GameObject   Obj      { get; set; }
+	public VisualEffect Renderer { get; set; }
 
-	public ParticleRender(string meshPath, Vector3 pos, Quaternion rotation)
+	public ParticleRender(string particlePath, Vector3 pos, Quaternion rotation)
 	{
-		Obj = Object.Instantiate(Resources.Load<GameObject>(meshPath), pos, rotation);
+		Obj      = Object.Instantiate(Resources.Load<GameObject>(particlePath), pos, rotation);
+		Renderer = Obj.GetComponentInChildren<VisualEffect>();
 	}
 }
