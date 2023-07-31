@@ -1,0 +1,94 @@
+{
+    "LANGUAGE" :[
+      {
+        "GAME_START": {
+          "ENGLISH": "Game Start",
+          "KOREAN": "게임 시작"
+        },
+        "LEADER_BOARD": {
+          "ENGLISH": "Leader Board",
+          "KOREAN": "리더 보드"
+        },
+        "OPTION": {
+          "ENGLISH": "Option",
+          "KOREAN": "옵션"
+        },
+        "QUIT": {
+          "ENGLISH": "Quit",
+          "KOREAN": "종료"
+        },
+        "QUIT_MESSAGE": {
+          "ENGLISH": "Are you sure want to quit?",
+          "KOREAN": "정말 종료하시겠습니까?"
+        },
+        "MESSAGE_YES": {
+          "ENGLISH": "Yes",
+          "KOREAN": "예"
+        },
+        "MESSAGE_NO": {
+          "ENGLISH": "No",
+          "KOREAN": "아니오"
+        },
+        "OPTION_SOUND": {
+          "ENGLISH": "SOUND",
+          "KOREAN": "소리"
+        },
+        "OPTION_BGM": {
+          "ENGLISH": "BGM",
+          "KOREAN": "배경음"
+        },
+        "OPTION_SFX": {
+          "ENGLISH": "SFX",
+          "KOREAN": "효과음"
+        },
+        "OPTION_GAMEPLAY": {
+          "ENGLISH": "Game Play",
+          "KOREAN": "게임 플레이"
+        },
+        "OPTION_COLOR": {
+          "ENGLISH": "Block Color",
+          "KOREAN": "컬러 블럭"
+        },
+        "OPTION_MONO": {
+          "ENGLISH": "Block Mono",
+          "KOREAN": "모노 블럭"
+        },
+        "OPTION_LANGUAGE": {
+          "ENGLISH": "Language",
+          "KOREAN": "언어"
+        },
+        "OPTION_CONTROL": {
+          "ENGLISH": "Control",
+          "KOREAN": "조작"
+        },
+        "CIRCULAR_BUTTON": {
+          "ENGLISH": "Circular Button",
+          "KOREAN": "원형 버튼"
+        },
+        "SIX_BUTTON": {
+          "ENGLISH": "Six Button",
+          "KOREAN": "배열형 버튼"
+        },
+        "BEST_SCORE": {
+          "ENGLISH": "Best Score",
+          "KOREAN": "최고 점수"
+        },
+        "GAME_PAUSE": {
+          "ENGLISH": "Pause",
+          "KOREAN": "일시 정지"
+        },
+        "GAMEOVER_MAINMENU": {
+          "ENGLISH": "Main Menu",
+          "KOREAN": "메인 메뉴"
+        },
+        "GAMEOVER_RETRY": {
+          "ENGLISH": "Retry",
+          "KOREAN": "재도전"
+        },
+        "NEW_BEST_SCORE": {
+          "ENGLISH": "New Best Score!",
+          "KOREAN": "최고 점수 갱신!"
+        }
+      }
+    ]
+}
