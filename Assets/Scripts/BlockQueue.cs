@@ -25,6 +25,11 @@ public class BlockQueue
 		return blockCreateFunc.BlockSpawn(randValue.Next(0, blockTypeNum));
 	}
 
+	public void SaveBlockReset()
+	{
+		saveBlock = null;
+	}
+
 	public Block SaveAndUpdateBlock(Block save)
 	{
 		if (saveBlock == null)
