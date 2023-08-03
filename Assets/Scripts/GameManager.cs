@@ -6,6 +6,7 @@
  * Also contains screen control method.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -65,32 +66,39 @@ public class GameManager : MonoBehaviour
 
 #region Variables
 
-	[Header("Test Mode")] public static bool  IsGameOver;
-	private static                      bool  isPause;
-	private const                       int   baseScore  = 100;
-	private static readonly             int[] scoreValue = { 1, 2, 4, 8 };
-	public static                       int   TotalScore;
-	public static                       bool  TestGrid;
-	[SerializeField] private            bool  testGrid;
-	public static                       int   TestHeight;
-	[SerializeField] private            int   testHeight = 4;
-	public static                       bool  Regeneration;
-	[SerializeField] private            bool  regeneration;
-	[SerializeField] private            int   testFieldSize = 6;
-	public static                       bool  TestModeBlock;
-	[SerializeField] private            bool  testModeBlock;
-	public static                       int   TestBlock;
-	[SerializeField] private            int   testBlock = 3;
+	[Header("Test Mode")] [SerializeField] private bool testGrid;
+	[SerializeField]                       private int  testHeight = 4;
+	[SerializeField]                       private bool regeneration;
+	[SerializeField]                       private int  testFieldSize = 6;
+	[SerializeField]                       private bool testModeBlock;
+	[SerializeField]                       private int  testBlock = 3;
 	[Space(20)] [Header("Grid/Block")] [SerializeField]
 	private int[] gridSize = { 10, 22, 10 };
-	public static  GameGrid        Grid;
-	private static BlockQueue      BlockQueue { get; set; }
-	public static  Block           CurrentBlock;
-	public static  Block           ShadowBlock;
-	public static  bool            CanSaveBlock;
-	public const   float           BlockSize    = 1.0f;
-	private        float           downInterval = 1.0f;
-	private        List<Coroutine> logicList;
+	public static                 bool            IsGameOver;
+	private static                bool            isPause;
+	private const                 int             baseScore  = 100;
+	private static readonly       int[]           scoreValue = { 1, 2, 4, 8 };
+	private static                int             comboIdx   = 0;
+	public static                 int             TotalScore;
+	public static                 bool            TestGrid;
+	public static                 int             TestHeight;
+	public static                 bool            GridRegen;
+	public static                 GameGrid        Grid;
+	public static                 bool            TestModeBlock;
+	public static                 int             TestBlock;
+	private static                BlockQueue      BlockQueue { get; set; }
+	public static                 Block           CurrentBlock;
+	public static                 Block           ShadowBlock;
+	public static                 bool            CanSaveBlock;
+	public const                  float           BlockSize    = 1.0f;
+	private static                float           downInterval = 1.0f;
+	private static                List<Coroutine> logicList;
+	[NonSerialized] public static InputSystem     InputSys;
+	[NonSerialized] public static CameraSystem    CameraSys;
+	[NonSerialized] public static EffectSystem    EffectSys;
+	[NonSerialized] public static UISystem        UISys;
+	[NonSerialized] public static RenderSystem    RenderSys;
+	[NonSerialized] public static AudioSystem     AudioSys;
 
 #endregion
 
@@ -109,7 +117,7 @@ public class GameManager : MonoBehaviour
 
 		TestGrid      = testGrid;
 		TestHeight    = testHeight;
-		Regeneration  = regeneration;
+		GridRegen     = regeneration;
 		TestModeBlock = testModeBlock;
 		TestBlock     = testBlock % Block.Type;
 
@@ -127,6 +135,13 @@ public class GameManager : MonoBehaviour
 		BlockQueue   = new BlockQueue();
 		CurrentBlock = BlockQueue.GetAndUpdateBlock();
 		CanSaveBlock = true;
+
+		InputSys  = gameObject.AddComponent<InputSystem>();
+		CameraSys = gameObject.AddComponent<CameraSystem>();
+		EffectSys = gameObject.AddComponent<EffectSystem>();
+		UISys     = gameObject.AddComponent<UISystem>();
+		RenderSys = gameObject.AddComponent<RenderSystem>();
+		AudioSys  = gameObject.AddComponent<AudioSystem>();
 	}
 
 	private void Update()
@@ -137,8 +152,6 @@ public class GameManager : MonoBehaviour
 		}
 		else if (!isPause)
 		{
-#endif
-
 			if (!audioSourceBGM.isPlaying && !IsGameOver)
 			{
 				RandomPlayBGM();
@@ -147,16 +160,12 @@ public class GameManager : MonoBehaviour
 
 		else if (isPause)
 		{
-#if UNITY_EDITOR || UNITY_STANDALONE_WIN
-
 			if (Input.GetKey(KeyCode.Escape) && !keyUsing[(int)KEY_VALUE.ESC])
 			{
 				GameResume();
 				keyUsing[(int)KEY_VALUE.ESC] = true;
 				StartCoroutine(KeyRewind((int)KEY_VALUE.ESC));
 			}
-
-#endif
 		}
 	}
 

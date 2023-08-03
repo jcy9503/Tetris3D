@@ -150,7 +150,7 @@ public class GameGrid
 			}
 		}
 		
-		if (GameManager.TestGrid && GameManager.Regeneration)
+		if (GameManager.TestGrid && GameManager.GridRegen)
 		{
 			for (int i = SizeY - GameManager.TestHeight + 1; i <= SizeY; ++i)
 			{
