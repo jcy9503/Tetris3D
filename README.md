@@ -1,4 +1,8 @@
-# Tetris3D
+# Tetris3D (Deprecated)   
+This project has been shut down.   
+You can fork lastest commit of master but it doesn't contain dozens of features.   
+Latest features are contained in Effect02 branch but it will cause a lot of errors in scripts.   
+My project Tetri3D is on the construction. ([link](https://github.com/jcy9503/Tetri3D))   
 
 - - -
 
